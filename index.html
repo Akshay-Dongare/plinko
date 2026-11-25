@@ -275,7 +275,6 @@ button:focus-visible,input:focus-visible{outline:3px solid #2b6cff;outline-offse
           </div>
           <a class="btn ghost" id="adash" href="/admin" hidden>See all players</a>
           <p class="note">This game uses play money only. At each peg, the ball goes left or right with a 50/50 probability. The game sets the full path when you drop the ball.</p>
-          <button class="link danger" id="reset">Reset game</button>
         </div>
       </div>
       <div class="foot">
@@ -589,7 +588,6 @@ function seg(id,vals,cur,lab,fn,lock){
 function comb(n,k){let c=1;for(let i=1;i<=k;i++)c=c*(n-k+i)/i;return c}
 function rtp(n,risk){return TABLES[n][risk].reduce((a,m,k)=>a+comb(n,k)*m,0)/2**n*100}
 function chipCol(m){return m>=10?['#c3127a','#fff']:m>=3?['#ff4f3b','#fff']:m>=1?['#ff9d2e','#1d1a33']:['#ffd23c','#1d1a33']}
-let resetArm=0;
 function ui(){
   const live=balls.length>0||AUTO.on,started=S.buyins>0;
   $('bal').textContent=money(S.balance);
@@ -757,10 +755,6 @@ $('bet').onchange=e=>setBet(parseFloat(e.target.value));
 $('half').onclick=()=>setBet(S.bet/2);
 $('dbl').onclick=()=>setBet(S.buyins&&S.balance>=0.1?Math.min(S.bet*2,S.balance):S.bet*2);
 $('snd').onclick=()=>{S.muted=!S.muted;if(!S.muted)audio();save();ui()};
-$('reset').onclick=e=>{
-  if(Date.now()-resetArm>3000){resetArm=Date.now();e.target.textContent='Push again to reset the game';setTimeout(()=>{e.target.textContent='Reset game'},3000);return}
-  stopAuto();const m=S.muted;balls=[];flashes=[];floats=[];load({muted:m});resetArm=0;e.target.textContent='Reset game';save();geom();draw();ui();
-};
 document.addEventListener('keydown',e=>{
   if(!$('authv').hidden){if(e.key==='Escape')closeAuth();return}
   if(!$('sq').hidden){if(e.key==='Escape')closeSq();return}
