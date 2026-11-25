@@ -28,7 +28,7 @@
 html,body{height:100%}
 html{background:var(--set2)}
 /* installed app: a solid strip behind the status bar, so the page does not scroll through the clock */
-@media(display-mode:standalone){body::before{content:"";position:fixed;inset:0 0 auto;height:var(--sat);background:var(--set2);z-index:5}}
+@media(display-mode:standalone){body::before{content:"";position:fixed;inset:var(--vt,0px) 0 auto;height:var(--sat);background:var(--set2);z-index:5}}
 body{margin:0;background:radial-gradient(120% 90% at 25% 0%,#ec3b3f 0%,var(--set) 45%,#b31923 100%) var(--set2);color:var(--ink);font:16px/1.45 Rubik,system-ui,sans-serif;overflow-x:clip}
 .app{height:100%;display:grid;grid-template-columns:minmax(0,1fr) 340px;grid-template-rows:minmax(0,1fr);gap:18px;padding:max(16px,calc(var(--sat) + 6px)) max(16px,2vw,var(--sar)) max(16px,var(--sab)) max(16px,2vw,var(--sal));max-width:1440px;margin:0 auto}
 .cab{display:grid;grid-template-rows:auto minmax(0,1fr);background:var(--set2);border-radius:26px;padding:10px 14px 14px;box-shadow:inset 0 2px 0 rgba(255,255,255,.2),inset 0 -6px 0 rgba(0,0,0,.2),0 10px 0 rgba(80,0,8,.25)}
@@ -90,7 +90,9 @@ button:focus-visible,input:focus-visible{outline:3px solid #2b6cff;outline-offse
 .acts.solo #buy{grid-column:1/-1}
 .acts.solo #cash{display:none}
 .cash{background:#0d8048;color:#fff;box-shadow:inset 0 -4px 0 #075a31}
-.veil{position:fixed;inset:0;background:rgba(40,0,6,.6);display:grid;padding:max(16px,var(--sat)) max(16px,var(--sar)) max(16px,var(--sab)) max(16px,var(--sal));z-index:10;overflow-y:auto}
+/* a card is open: the page behind it does not scroll. --vt and --vb are the parts of the screen that the on-screen keyboard hides */
+html.lock{overflow:hidden}
+.veil{position:fixed;inset:0;--dim:rgba(40,0,6,.6);background:var(--dim);box-shadow:0 0 0 100vmax var(--dim);display:grid;padding:calc(max(16px,var(--sat) + 8px) + var(--vt,0px)) max(16px,var(--sar)) calc(max(16px,var(--sab)) + var(--vb,0px)) max(16px,var(--sal));scroll-padding:calc(16px + var(--vt,0px)) 0 calc(16px + var(--vb,0px));z-index:10;overflow-y:auto;overscroll-behavior:contain}
 .veil>.ticket{margin:auto}
 .veil[hidden]{display:none}
 .ticket{width:min(380px,100%);background:#fff;border-radius:16px;padding:22px 22px 18px;box-shadow:0 10px 0 rgba(80,0,8,.35);animation:pop .28s ease-out}
@@ -146,7 +148,7 @@ button:focus-visible,input:focus-visible{outline:3px solid #2b6cff;outline-offse
 .or{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:13px;margin:14px 0}
 .or::before,.or::after{content:"";flex:1;border-top:1px solid var(--line)}
 .priv{font-size:13px;color:var(--muted);margin:14px 0 0}
-#authv.gate{background:rgba(40,0,6,.28)}
+#authv.gate{--dim:rgba(40,0,6,.28)}
 .auth h2{font:400 clamp(24px,5vw,30px)/1.1 Bungee,Rubik,sans-serif;color:var(--ink);margin:0 0 8px}
 .auth .sub{color:var(--muted);margin:0 0 16px}
 .modes{margin-bottom:16px}
@@ -1044,6 +1046,21 @@ async function initAccount(){
   try{localStorage.setItem('plinko-gate',canGate?'1':'0')}catch(e){}
   if(r.user){me=r.user;acctUI();if(gated){setGate(false);$('authv').hidden=true;balls=balls.filter(b=>!b.demo)}await syncIn();CUR=me.cur||(hasHist()?'USD':guessCur());settle();onboard()}
   else if(canGate&&!gated)setGate(true);
+}
+
+/* cards: lock the page behind an open card, and keep the card in the visible area when the on-screen keyboard is open */
+const layers=[$('veil'),$('authv'),$('sq')],vv=window.visualViewport;
+let lockY=0;
+const lockPage=()=>{const on=layers.some(e=>!e.hidden),h=document.documentElement;if(on===h.classList.contains('lock'))return;if(on)lockY=scrollY;h.classList.toggle('lock',on);if(!on)scrollTo(0,lockY)};   // iOS can scroll the page to show a field: go back to the same place
+for(const e of layers)new MutationObserver(lockPage).observe(e,{attributes:true,attributeFilter:['hidden']});
+function fitCards(){
+  const h=document.documentElement,zoom=vv.scale>1.01,top=zoom?0:Math.max(0,vv.offsetTop),bot=zoom?0:h.clientHeight-vv.offsetTop-vv.height;
+  h.style.setProperty('--vt',top+'px');h.style.setProperty('--vb',(bot>1?bot:0)+'px');
+}
+if(vv){
+  vv.addEventListener('scroll',fitCards);
+  vv.addEventListener('resize',()=>{fitCards();const a=document.activeElement;if(a&&a.tagName==='INPUT'&&a.closest('.veil'))requestAnimationFrame(()=>{const b=a.form&&a.form.querySelector('.btn');if(b)b.scrollIntoView({block:'nearest'});a.scrollIntoView({block:'nearest'})})});   // show the field and, if there is room, the button of its form
+  fitCards();
 }
 
 function start(data){
