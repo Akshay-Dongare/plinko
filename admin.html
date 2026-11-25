@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plinko Players</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#a3141f">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%227%22 fill=%22%23d7262d%22/%3E%3Ccircle cx=%2216%22 cy=%2216%22 r=%229%22 fill=%22%23ffc531%22 stroke=%22%237a3f00%22 stroke-width=%222%22/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Rubik:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE work: the site owner's back-office view of the same game-show set
+   IDEA the producer's clipboard behind the Plinko wall
+   PICTURE one square total tile that opens into a tile per player, with a pie toggle
+   COLOUR cherry-red set, white panels, ink, green up and red down
+   TYPE Bungee for the title and totals, Rubik for everything else
+   LAYOUT one panel: total tile left, summary right; phone: tile above summary */
+:root{color-scheme:light;--set:#d7262d;--ink:#1d1a33;--muted:#5d5870;--line:#e4dccf;--soft:#f4efe7;--good:#0d8048;--bad:#c41d2a}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;min-height:100vh;background:radial-gradient(120% 90% at 25% 0%,#ec3b3f 0%,var(--set) 45%,#b31923 100%);color:var(--ink);font:16px/1.5 Rubik,system-ui,sans-serif;overflow-x:clip}
+main{max-width:860px;margin:0 auto;padding:24px max(16px,4vw)}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;color:#fff;margin-bottom:18px}
+h1{font:400 clamp(30px,5vw,44px)/1.05 Bungee,Rubik,sans-serif;margin:0;text-shadow:0 3px 0 rgba(0,0,0,.25)}
+header a{color:#fff;font-weight:600;min-height:44px;display:inline-flex;align-items:center}
+.panel{background:#fff;border-radius:18px;padding:18px;box-shadow:0 6px 0 rgba(80,0,8,.22)}
+.lead{display:grid;grid-template-columns:180px minmax(0,1fr);gap:20px;align-items:center}
+.tile{aspect-ratio:1;width:180px;border:0;border-radius:18px;background:var(--ink);color:#fff;display:flex;flex-direction:column;justify-content:space-between;padding:14px;text-align:left;cursor:pointer;font:inherit;box-shadow:inset 0 -4px 0 #000}
+.tile small{font-size:13px;opacity:.85}
+.tile b{font:400 48px/1 Bungee,Rubik,sans-serif}
+.sum p{margin:0 0 8px;color:var(--muted)}
+.sum b{color:var(--ink);white-space:nowrap}
+.up{color:var(--good)}.down{color:var(--bad)}
+.msg{color:var(--muted)}
+.sqback{position:fixed;inset:0;z-index:19;background:rgba(40,0,6,.35)}
+.sq{position:fixed;z-index:20;background:#fff;border-radius:20px;box-shadow:0 18px 50px rgba(40,0,6,.45);display:flex;flex-direction:column;overflow:hidden;transition:left .28s ease,top .28s ease,width .28s ease,height .28s ease}
+.sqback[hidden],.sq[hidden]{display:none}
+.sqhead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:16px 16px 6px}
+.sqhead h2{margin:0;font:400 clamp(22px,5vw,30px)/1.1 Bungee,Rubik,sans-serif}
+.sqhead p{margin:4px 0 0;color:var(--muted);font-size:14px;overflow-wrap:anywhere}
+.btn{min-height:44px;border:2px solid var(--line);background:#fff;border-radius:12px;padding:0 14px;font:600 15px Rubik,sans-serif;cursor:pointer;color:var(--ink);white-space:nowrap}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:4px;background:var(--soft);border-radius:12px;padding:4px;margin:8px 16px 10px}
+.seg button{min-height:44px;border:0;border-radius:9px;background:transparent;font:600 15px Rubik,sans-serif;color:var(--ink);cursor:pointer}
+.seg button[aria-pressed=true]{background:var(--ink);color:#fff}
+.sqbody{flex:1;overflow:auto;padding:0 16px 16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
+.st{aspect-ratio:1;border:0;border-radius:12px;padding:10px;display:flex;flex-direction:column;justify-content:space-between;font:13px/1.35 Rubik,sans-serif;background:var(--soft);color:var(--ink);text-align:left}
+button.st{cursor:pointer}
+.st .em{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.st b{font-size:18px;white-space:nowrap}
+.st.up{background:#e1f3e8;color:#0a5c33}.st.down{background:#fde4e6;color:#9e1520}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px 14px;margin:0 0 12px}
+.facts span{display:block;font-size:13px;color:var(--muted)}
+.facts b{overflow-wrap:anywhere}
+.seg[hidden]{display:none}
+.pie{display:grid;grid-template-columns:minmax(0,200px) minmax(0,1fr);gap:16px;align-items:center}
+.pie svg{width:100%;height:auto}
+.pie ul{list-style:none;margin:0;padding:0}
+.pie li{display:flex;align-items:center;gap:8px;padding:5px 0}
+.pie i{width:14px;height:14px;border-radius:4px;flex:none}
+button:focus-visible,a:focus-visible{outline:3px solid #2b6cff;outline-offset:2px}
+@media(max-width:560px){.lead{grid-template-columns:minmax(0,1fr)}.tile{width:160px}.pie{grid-template-columns:minmax(0,1fr)}.pie svg{max-width:200px}}
+@media(prefers-reduced-motion:reduce){.sq{transition:none}}
+</style>
+</head>
+<body>
+<main>
+  <header><h1>Plinko players</h1><a href="/">Back to the game</a></header>
+  <section class="panel" id="root"><p class="msg">Loading players…</p></section>
+</main>
+<div class="sqback" id="sqback" hidden></div>
+<div class="sq" id="sq" role="dialog" aria-modal="true" aria-labelledby="sqh" hidden>
+  <div class="sqhead"><div><h2 id="sqh">Players</h2><p id="sqsub"></p></div><button class="btn" id="sqx">Close</button></div>
+  <div class="seg" id="sqv" role="group" aria-label="View"></div>
+  <div class="sqbody" id="sqbody"></div>
+</div>
+<script>
+{
+const $=id=>document.getElementById(id);
+const esc=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt=new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'});
+const money=v=>fmt.format(v);
+const signed=v=>(v>0.004?'+':v<-0.004?'−':'')+fmt.format(Math.abs(v));
+const cls=v=>v>0.004?'up':v<-0.004?'down':'';
+const day=v=>v?new Date(v).toLocaleDateString('en-US',{day:'numeric',month:'short',year:'numeric'}):'Unknown';
+const when=v=>v?new Date(v).toLocaleString('en-US',{day:'numeric',month:'short',year:'numeric',hour:'numeric',minute:'2-digit'}):'Unknown';
+let P=[],view='tiles',open=null;
+
+function stats(p){
+  const real=p.log.filter(x=>!x.legacy);
+  const net=p.log.reduce((a,x)=>a+x.net,0),wag=real.reduce((a,x)=>a+x.wag,0),back=real.reduce((a,x)=>a+x.wag+x.net,0);
+  const sessions=p.log.reduce((a,x)=>a+(x.legacy?x.n:1),0),balls=real.reduce((a,x)=>a+x.balls,0)+p.dropped;
+  return{net,wag,back,sessions,balls};
+}
+function render(){
+  const all=P.map(stats),net=all.reduce((a,s)=>a+s.net,0),wag=all.reduce((a,s)=>a+s.wag,0),back=all.reduce((a,s)=>a+s.back,0);
+  const balls=all.reduce((a,s)=>a+s.balls,0),now=Date.now();
+  const joined=P.filter(p=>p.created&&now-Date.parse(p.created)<7*864e5).length,active=P.filter(p=>p.lastSeen&&now-Date.parse(p.lastSeen)<864e5).length;
+  $('root').innerHTML=`<div class="lead">
+    <button class="tile" id="ptile" aria-haspopup="dialog"><small>Players</small><b>${P.length}</b><small>Tap to see each one</small></button>
+    <div class="sum">
+      <p>All players' cash-outs: <b class="${cls(net)}">${signed(net)}</b>${net<-0.004?' (the house is up)':''}</p>
+      <p>Paid back <b>${wag?(back/wag*100).toFixed(1)+'%':'n/a'}</b> of <b>${money(wag)}</b> wagered. The board's long-run rate is about 99%.</p>
+      <p><b>${balls.toLocaleString('en-US')}</b> balls dropped. <b>${joined}</b> joined in the last 7 days, <b>${active}</b> played in the last 24 hours.</p>
+    </div></div>`;
+  $('ptile').onclick=openSq;
+}
+function seg(){
+  $('sqv').hidden=!!open;
+  $('sqv').innerHTML=['tiles','pie'].map(v=>`<button type="button" data-v="${v}" aria-pressed="${v===view}">${v==='tiles'?'Players':'Pie'}</button>`).join('');
+  $('sqv').onclick=e=>{const b=e.target.closest('button');if(b){view=b.dataset.v;body()}};
+}
+function body(){
+  seg();const B=$('sqbody');
+  if(open!==null){
+    const p=P[open],s=stats(p);
+    $('sqh').textContent=signed(s.net);$('sqh').className=cls(s.net);$('sqsub').textContent=p.email;
+    const log=p.log.map((x,i)=>({...x,i:i+1})).reverse();
+    B.innerHTML=`<button class="btn" id="back" type="button">All players</button>
+      <div class="facts" style="margin-top:12px">
+        <div><span>Joined</span><b>${esc(day(p.created))}</b></div><div><span>Last played</span><b>${esc(when(p.lastSeen))}</b></div>
+        <div><span>Balance now</span><b>${money(p.balance)}</b></div><div><span>Passkeys</span><b>${p.passkeys}</b></div>
+        <div><span>Sessions</span><b>${s.sessions}</b></div><div><span>Paid back</span><b>${s.wag?(s.back/s.wag*100).toFixed(1)+'%':'n/a'}</b></div>
+      </div>
+      ${log.length?'<div class="grid">'+log.map(x=>`<div class="st ${cls(x.net)}"><span>${x.legacy?'Earlier':'#'+x.i+' · '+esc(day(x.end))}</span><b>${signed(x.net)}</b><span>${x.legacy?x.n+' session'+(x.n>1?'s':''):x.balls+' ball'+(x.balls===1?'':'s')}</span></div>`).join('')+'</div>':'<p class="msg">No cash-outs yet.</p>'}`;
+    $('back').onclick=()=>{open=null;body()};
+    return;
+  }
+  $('sqh').textContent=`${P.length} player${P.length===1?'':'s'}`;$('sqh').className='';$('sqsub').textContent='Net across each player\'s cash-outs, most recent first';
+  if(!P.length){B.innerHTML='<p class="msg">Nobody has signed up yet.</p>';return}
+  if(view==='tiles'){
+    B.innerHTML='<div class="grid">'+P.map((p,i)=>{const s=stats(p);return`<button class="st ${cls(s.net)}" data-i="${i}" type="button"><span class="em" title="${esc(p.email)}">${esc(p.email)}</span><b>${signed(s.net)}</b><span>${s.sessions} session${s.sessions===1?'':'s'} · ${esc(day(p.lastSeen))}</span></button>`}).join('')+'</div>';
+    B.onclick=e=>{const b=e.target.closest('button.st');if(b){open=+b.dataset.i;body()}};
+    return;
+  }
+  B.onclick=null;
+  const c={up:0,down:0,even:0,none:0};
+  for(const p of P){const s=stats(p);c[!s.sessions?'none':s.net>0.004?'up':s.net<-0.004?'down':'even']++}
+  const parts=[['up','Up overall','#0d8048'],['down','Down overall','#c41d2a'],['even','Even','#b9b2a6'],['none','No cash-outs yet','#e4dccf']].filter(x=>c[x[0]]),tot=P.length;
+  let a=-Math.PI/2,svg='';
+  for(const[k,,col]of parts){const f=c[k]/tot;
+    if(f>=1){svg+=`<circle cx="100" cy="100" r="90" fill="${col}"/>`;continue}
+    const b=a+f*2*Math.PI;svg+=`<path d="M100 100L${(100+90*Math.cos(a)).toFixed(2)} ${(100+90*Math.sin(a)).toFixed(2)}A90 90 0 ${f>.5?1:0} 1 ${(100+90*Math.cos(b)).toFixed(2)} ${(100+90*Math.sin(b)).toFixed(2)}Z" fill="${col}" stroke="#fff" stroke-width="2"/>`;a=b}
+  B.innerHTML=`<div class="pie"><svg viewBox="0 0 200 200" role="img" aria-label="Players up, down, even and without cash-outs">${svg}</svg><ul>${parts.map(([k,l,col])=>`<li><i style="background:${col}"></i>${l}: ${c[k]} of ${tot} (${Math.round(c[k]/tot*100)}%)</li>`).join('')}</ul></div>`;
+}
+function rect(){
+  const t=$('ptile').getBoundingClientRect(),vw=innerWidth,vh=innerHeight,z=Math.min(640,vw-32,vh-32);
+  return{t,l:Math.min(Math.max(16,t.left+t.width/2-z/2),vw-16-z),y:Math.min(Math.max(16,t.bottom-z),vh-16-z),z};
+}
+function openSq(){
+  const r=rect(),q=$('sq'),s=q.style;open=null;
+  s.left=r.t.left+'px';s.top=r.t.top+'px';s.width=r.t.width+'px';s.height=r.t.height+'px';
+  q.hidden=false;$('sqback').hidden=false;body();
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{s.left=r.l+'px';s.top=r.y+'px';s.width=r.z+'px';s.height=r.z+'px'}));
+  $('sqx').focus();
+}
+function closeSq(){
+  const r=rect(),q=$('sq'),s=q.style;
+  s.left=r.t.left+'px';s.top=r.t.top+'px';s.width=r.t.width+'px';s.height=r.t.height+'px';$('sqback').hidden=true;
+  setTimeout(()=>{q.hidden=true;$('ptile').focus()},matchMedia('(prefers-reduced-motion: reduce)').matches?0:280);
+}
+$('sqx').onclick=closeSq;$('sqback').onclick=closeSq;
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('sq').hidden)closeSq()});
+(async()=>{
+  try{
+    const r=await fetch('/api/admin',{credentials:'same-origin'});let j={};try{j=await r.json()}catch(e){}
+    if(!r.ok){$('root').innerHTML=`<p class="msg">${esc(j.error||'Could not load players.')}</p><p><a href="/">Go to the game and sign in</a></p>`;return}
+    P=Array.isArray(j.players)?j.players:[];render();
+  }catch(e){$('root').innerHTML='<p class="msg">No connection. Check your internet and reload.</p>'}
+})();
+}
+</script>
+</body>
+</html>
