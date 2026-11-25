@@ -373,7 +373,7 @@ const rnd=()=>{const a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]/
 const TOUCH=matchMedia('(hover: none)').matches;
 let holding=null,holdT=0,ptrDown=false,spaceTaken=false,navKeys=false;
 document.addEventListener('pointerdown',()=>{navKeys=false},true);
-const DEF={balance:0,boughtIn:0,buyins:0,pending:0,bet:1,rows:16,risk:'medium',tab:'manual',mode:'manual',dropped:0,wagered:0,best:0,hist:[],muted:false,exp:0,started:null,log:[],auto:{n:50,fast:false,loss:25,big:true}};
+const DEF={balance:0,boughtIn:0,buyins:0,pending:0,bet:1,rows:8,risk:'medium',tab:'manual',mode:'manual',dropped:0,wagered:0,best:0,hist:[],muted:false,exp:0,started:null,log:[],auto:{n:50,fast:false,loss:25,big:true}};
 let S={...DEF,hist:[],log:[]};
 
 function load(d){
@@ -385,7 +385,7 @@ function load(d){
   const N=v=>Number.isFinite(+v)?+v:0,T=v=>typeof v==='string'&&!isNaN(Date.parse(v))?v:null;
   S.log=Array.isArray(d.log)?d.log.filter(x=>x&&typeof x==='object').slice(-500).map(x=>({start:T(x.start),end:T(x.end),in:N(x.in),out:N(x.out),net:N(x.net),wag:N(x.wag),balls:N(x.balls),best:N(x.best),exp:x.exp==null?null:N(x.exp),legacy:x.legacy===true,n:N(x.n)||1})):[];
   if(!S.log.length&&+d.sessions>0)S.log=[{legacy:true,n:+d.sessions,in:N(d.lifeIn),out:N(d.lifeOut),net:r2(N(d.lifeOut)-N(d.lifeIn)),wag:0,balls:0,best:0,exp:null,start:null,end:null}];
-  S.rows=ROWS.includes(+d.rows)?+d.rows:16;
+  S.rows=ROWS.includes(+d.rows)?+d.rows:8;
   S.risk=RISKS.includes(d.risk)?d.risk:'medium';
   S.tab=['manual','auto','stats'].includes(d.tab)?d.tab:'manual';S.mode=d.mode==='auto'?'auto':'manual';
   S.muted=d.muted===true;
@@ -615,7 +615,7 @@ function ui(){
   $('pauto').hidden=S.mode!=='auto';
   autoUI();
   $('riskS').value=S.risk;$('rowsS').value=String(S.rows);$('riskS').disabled=$('rowsS').disabled=live;
-  $('rtp').textContent=`The top slot pays ${fmtM(TABLES[S.rows][S.risk][0])}\u00d7. Over time, this board pays back ${rtp(S.rows,S.risk).toFixed(1)}% of all bets.`+(live?' You cannot change these settings while balls are on the board.':'');
+  $('rtp').textContent=`The top slots pay ${fmtM(TABLES[S.rows][S.risk][0])}\u00d7. Approximately 1 ball in ${(2**(S.rows-1)).toLocaleString('en-US')} goes into a top slot. Over time, this board pays back ${rtp(S.rows,S.risk).toFixed(1)}% of all bets.`+(live?' You cannot change these settings while balls are on the board.':'');
   // the one big button
   const g=$('go'),gl=$('gol'),auto=S.mode==='auto';let cost='';
   if(AUTO.on){gl.textContent=`Stop auto (${AUTO.done}${S.auto.n?' of '+S.auto.n:''})`;g.className='btn big stop';g.disabled=false;cost=`This run: ${AUTO.done} ball${AUTO.done===1?'':'s'}, net ${signed(netNow()-AUTO.base)}.`}
