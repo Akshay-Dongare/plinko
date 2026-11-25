@@ -79,10 +79,16 @@ button:focus-visible,a:focus-visible{outline:3px solid #2b6cff;outline-offset:2p
 {
 const $=id=>document.getElementById(id);
 const esc=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const fmt=new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'});
-const money=v=>fmt.format(v);
-const signed=v=>(v>0.004?'+':v<-0.004?'−':'')+fmt.format(Math.abs(v));
+/* Each player has one currency (USD or INR). Amounts in two currencies cannot be added,
+   so totals for all players are in evenings out: a net divided by the buy-in of its session. */
+const NF={};
+const nf=c=>NF[c]||(NF[c]=new Intl.NumberFormat(c==='INR'?'en-IN':'en-US',{style:'currency',currency:c==='INR'?'INR':'USD',...(c==='INR'?{trailingZeroDisplay:'stripIfInteger'}:{})}));
+const money=(v,c)=>nf(c).format(v);
+const signed=(v,c)=>(v>0.004?'+':v<-0.004?'−':'')+money(Math.abs(v),c);
+const evs=v=>{const t=Math.abs(v).toFixed(1).replace(/\.0$/,'');return(t==='0'?'':v>0?'+':'−')+t+' evening'+(t==='1'?'':'s')+' out'};
+const fit=t=>t.length>10?' style="font-size:13px"':t.length>8?' style="font-size:15px"':'';
 const cls=v=>v>0.004?'up':v<-0.004?'down':'';
+const clsE=v=>cls(Math.abs(v)<0.05?0:v);
 const day=v=>v?new Date(v).toLocaleDateString('en-US',{day:'numeric',month:'short',year:'numeric'}):'Unknown';
 const when=v=>v?new Date(v).toLocaleString('en-US',{day:'numeric',month:'short',year:'numeric',hour:'numeric',minute:'2-digit'}):'Unknown';
 let P=[],view='tiles',open=null;
@@ -91,17 +97,18 @@ function stats(p){
   const real=p.log.filter(x=>!x.legacy);
   const net=p.log.reduce((a,x)=>a+x.net,0),wag=real.reduce((a,x)=>a+x.wag,0),back=real.reduce((a,x)=>a+x.wag+x.net,0);
   const sessions=p.log.reduce((a,x)=>a+(x.legacy?x.n:1),0),balls=real.reduce((a,x)=>a+x.balls,0)+p.dropped;
-  return{net,wag,back,sessions,balls};
+  const u=x=>x.unit>0?x.unit:100,ev=p.log.reduce((a,x)=>a+x.net/u(x),0),wagE=real.reduce((a,x)=>a+x.wag/u(x),0),backE=real.reduce((a,x)=>a+(x.wag+x.net)/u(x),0);
+  return{net,wag,back,sessions,balls,ev,wagE,backE};
 }
 function render(){
-  const all=P.map(stats),net=all.reduce((a,s)=>a+s.net,0),wag=all.reduce((a,s)=>a+s.wag,0),back=all.reduce((a,s)=>a+s.back,0);
+  const all=P.map(stats),ev=all.reduce((a,s)=>a+s.ev,0),wag=all.reduce((a,s)=>a+s.wagE,0),back=all.reduce((a,s)=>a+s.backE,0);
   const balls=all.reduce((a,s)=>a+s.balls,0),now=Date.now();
   const joined=P.filter(p=>p.created&&now-Date.parse(p.created)<7*864e5).length,active=P.filter(p=>p.lastSeen&&now-Date.parse(p.lastSeen)<864e5).length;
   $('root').innerHTML=`<div class="lead">
     <button class="tile" id="ptile" aria-haspopup="dialog"><small>Players</small><b>${P.length}</b><small>Push to see each player</small></button>
     <div class="sum">
-      <p>All players' cash-outs: <b class="${cls(net)}">${signed(net)}</b>${net<-0.004?' (the house won)':''}</p>
-      <p>The board paid back <b>${wag?(back/wag*100).toFixed(1)+'%':'n/a'}</b> of <b>${money(wag)}</b> in bets. Over time, the board pays back approximately 99%.</p>
+      <p>All players' cash-outs: <b class="${clsE(ev)}">${evs(ev)}</b>${ev<-0.05?' (the house won)':''}. One evening out is the buy-in of the player.</p>
+      <p>The board paid back <b>${wag?(back/wag*100).toFixed(1)+'%':'n/a'}</b> of all bets. Over time, the board pays back approximately 99%.</p>
       <p><b>${balls.toLocaleString('en-US')}</b> balls dropped. <b>${joined}</b> joined in the last 7 days. <b>${active}</b> played in the last 24 hours.</p>
     </div></div>`;
   $('ptile').onclick=openSq;
@@ -115,22 +122,23 @@ function body(){
   seg();const B=$('sqbody');
   if(open!==null){
     const p=P[open],s=stats(p);
-    $('sqh').textContent=signed(s.net);$('sqh').className=cls(s.net);$('sqsub').textContent=p.name?`${p.name} · ${p.email}`:p.email;
+    $('sqh').textContent=signed(s.net,p.cur);$('sqh').className=cls(s.net);$('sqsub').textContent=p.name?`${p.name} · ${p.email}`:p.email;
     const log=p.log.map((x,i)=>({...x,i:i+1})).reverse();
     B.innerHTML=`<button class="btn" id="back" type="button">All players</button>
       <div class="facts" style="margin-top:12px">
         <div><span>Joined</span><b>${esc(day(p.created))}</b></div><div><span>Last played</span><b>${esc(when(p.lastSeen))}</b></div>
-        <div><span>Balance now</span><b>${money(p.balance)}</b></div><div><span>Passkeys</span><b>${p.passkeys}</b></div>
+        <div><span>Buy-in (one evening out)</span><b>${p.buyin?money(p.buyin,p.cur):'Not set'}</b></div><div><span>Net in evenings out</span><b class="${clsE(s.ev)}">${evs(s.ev)}</b></div>
+        <div><span>Balance now</span><b>${money(p.balance,p.cur)}</b></div><div><span>Passkeys</span><b>${p.passkeys}</b></div>
         <div><span>Sessions</span><b>${s.sessions}</b></div><div><span>Paid back</span><b>${s.wag?(s.back/s.wag*100).toFixed(1)+'%':'n/a'}</b></div>
       </div>
-      ${log.length?'<div class="grid">'+log.map(x=>`<div class="st ${cls(x.net)}"><span>${x.legacy?'Earlier':'#'+x.i+' · '+esc(day(x.end))}</span><b>${signed(x.net)}</b><span>${x.legacy?x.n+' session'+(x.n>1?'s':''):x.balls+' ball'+(x.balls===1?'':'s')}</span></div>`).join('')+'</div>':'<p class="msg">No cash-outs yet.</p>'}`;
+      ${log.length?'<div class="grid">'+log.map(x=>`<div class="st ${cls(x.net)}"><span>${x.legacy?'Earlier':'#'+x.i+' · '+esc(day(x.end))}</span><b${fit(signed(x.net,p.cur))}>${signed(x.net,p.cur)}</b><span>${x.legacy?x.n+' session'+(x.n>1?'s':''):x.balls+' ball'+(x.balls===1?'':'s')}</span></div>`).join('')+'</div>':'<p class="msg">No cash-outs yet.</p>'}`;
     $('back').onclick=()=>{open=null;body()};
     return;
   }
-  $('sqh').textContent=`${P.length} player${P.length===1?'':'s'}`;$('sqh').className='';$('sqsub').textContent='The net of the cash-outs of each player. The newest are first.';
+  $('sqh').textContent=`${P.length} player${P.length===1?'':'s'}`;$('sqh').className='';$('sqsub').textContent='The net of the cash-outs of each player, in the currency of the player. The newest are first.';
   if(!P.length){B.innerHTML='<p class="msg">No players have signed up.</p>';return}
   if(view==='tiles'){
-    B.innerHTML='<div class="grid">'+P.map((p,i)=>{const s=stats(p);return`<button class="st ${cls(s.net)}" data-i="${i}" type="button"><span class="who" title="${esc(p.email)}"><span class="nm">${esc(p.name||'No name')}</span><span class="em">${esc(p.email)}</span></span><b>${signed(s.net)}</b><span>${s.sessions} session${s.sessions===1?'':'s'} · ${esc(day(p.lastSeen))}</span></button>`}).join('')+'</div>';
+    B.innerHTML='<div class="grid">'+P.map((p,i)=>{const s=stats(p);return`<button class="st ${cls(s.net)}" data-i="${i}" type="button"><span class="who" title="${esc(p.email)}"><span class="nm">${esc(p.name||'No name')}</span><span class="em">${esc(p.email)}</span></span><b${fit(signed(s.net,p.cur))}>${signed(s.net,p.cur)}</b><span>${s.sessions} session${s.sessions===1?'':'s'} · ${esc(day(p.lastSeen))}</span></button>`}).join('')+'</div>';
     B.onclick=e=>{const b=e.target.closest('button.st');if(b){open=+b.dataset.i;body()}};
     return;
   }

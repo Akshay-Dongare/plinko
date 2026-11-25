@@ -9,7 +9,7 @@ import {
   send, readBody, getCookies, site, cookie, rid, sha, clientIp, admins,
   currentUser, startSession
 } from '../lib/http.js';
-import { cleanName } from '../lib/state.js';
+import { cleanName, cleanStake, hasHistory } from '../lib/state.js';
 
 const EMAIL_RE = /^[^\s@<>"']{1,64}@[^\s@<>"']{1,190}\.[a-z]{2,24}$/i;
 const CODE_TTL = 600;
@@ -17,7 +17,7 @@ const CODE_TTL = 600;
 async function passkeyCount(uid) { return (await kv('SCARD', 'creds:' + uid)) || 0; }
 
 async function publicUser(u) {
-  return { name: u.name || '', email: u.email, admin: admins().includes(u.email), passkeys: await passkeyCount(u.id) };
+  return { name: u.name || '', email: u.email, cur: u.cur || '', buyin: u.buyin || 0, admin: admins().includes(u.email), passkeys: await passkeyCount(u.id) };
 }
 
 async function limit(key, max, ttl) {
@@ -26,21 +26,25 @@ async function limit(key, max, ttl) {
   return n <= max;
 }
 
-// Returns [user record, isNew]. A name is stored for a new account, or added to an account that has none.
-async function findOrCreateUser(email, name) {
+// Returns [user record, isNew]. A name and a buy-in are stored for a new account,
+// or added to an account that has none.
+async function findOrCreateUser(email, name, stake) {
   const existing = await kv('GET', 'email:' + email);
   if (existing) {
     const raw = await kv('GET', 'user:' + existing);
     if (raw) {
       const u = JSON.parse(raw);
-      if (name && !u.name) { u.name = name; await kv('SET', 'user:' + u.id, JSON.stringify(u)); }
+      let changed = false;
+      if (name && !u.name) { u.name = name; changed = true; }
+      if (stake && !u.buyin && (stake.cur === (u.cur || 'USD') || !(await hasHistory(u.id)))) { Object.assign(u, stake); changed = true; }
+      if (changed) await kv('SET', 'user:' + u.id, JSON.stringify(u));
       return [u, false];
     }
   }
   const now = new Date().toISOString();
-  const user = { id: rid(16), email, name: name || '', created: now, lastSeen: now };
+  const user = { id: rid(16), email, name: name || '', ...(stake || {}), created: now, lastSeen: now };
   const ok = await kv('SET', 'email:' + email, user.id, 'NX');
-  if (ok !== 'OK') return findOrCreateUser(email, name);
+  if (ok !== 'OK') return findOrCreateUser(email, name, stake);
   await pipe([['SET', 'user:' + user.id, JSON.stringify(user)], ['SADD', 'users', user.id]]);
   return [user, true];
 }
@@ -84,7 +88,7 @@ export default async function handler(req, res) {
         return send(res, 400, { error: `The code is not correct. You can type the code ${5 - rec.tries} more time${5 - rec.tries === 1 ? '' : 's'}.` });
       }
       await kv('DEL', 'code:' + email);
-      const [user, isNew] = await findOrCreateUser(email, cleanName(b.name));
+      const [user, isNew] = await findOrCreateUser(email, cleanName(b.name), cleanStake(b.cur, b.buyin));
       const cookies = await startSession(res, req, user);
       return send(res, 200, { user: await publicUser(user), created: isNew }, cookies);
     }
@@ -155,6 +159,18 @@ export default async function handler(req, res) {
       if (!name) return send(res, 400, { error: 'Type a name with 1 to 30 characters.' });
       const { sid, ...rec } = user;
       const next = { ...rec, name };
+      await kv('SET', 'user:' + user.id, JSON.stringify(next));
+      return send(res, 200, { user: await publicUser(next) });
+    }
+
+    if (op === 'set-stake') {
+      const stake = cleanStake(b.cur, b.buyin);
+      if (!stake) return send(res, 400, { error: 'This amount is not in the permitted range.' });
+      if (stake.cur !== (user.cur || 'USD') && await hasHistory(user.id)) {
+        return send(res, 400, { error: 'You cannot change the currency after your first session.' });
+      }
+      const { sid, ...rec } = user;
+      const next = { ...rec, ...stake };
       await kv('SET', 'user:' + user.id, JSON.stringify(next));
       return send(res, 200, { user: await publicUser(next) });
     }

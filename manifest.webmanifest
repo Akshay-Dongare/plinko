@@ -1,7 +1,7 @@
 {
   "name": "Plinko",
   "short_name": "Plinko",
-  "description": "Plinko with play money. Buy in for $100 and cash out when you stop.",
+  "description": "Plinko with play money. Buy in, drop balls and cash out when you stop.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

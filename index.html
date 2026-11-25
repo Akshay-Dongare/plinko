@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Plinko</title>
-<meta name="description" content="Plinko with play money. Buy in for $100 and cash out when you stop.">
+<meta name="description" content="Plinko with play money. Buy in, drop balls and cash out when you stop.">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/manifest.webmanifest">
 <meta name="apple-mobile-web-app-title" content="Plinko">
@@ -85,13 +85,16 @@ button:focus-visible,input:focus-visible{outline:3px solid #2b6cff;outline-offse
 .acts.solo #buy{grid-column:1/-1}
 .acts.solo #cash{display:none}
 .cash{background:#0d8048;color:#fff;box-shadow:inset 0 -4px 0 #075a31}
-.veil{position:fixed;inset:0;background:rgba(40,0,6,.6);display:grid;place-items:center;padding:16px;z-index:10}
+.veil{position:fixed;inset:0;background:rgba(40,0,6,.6);display:grid;padding:16px;z-index:10;overflow-y:auto}
+.veil>.ticket{margin:auto}
 .veil[hidden]{display:none}
 .ticket{width:min(380px,100%);background:#fff;border-radius:16px;padding:22px 22px 18px;box-shadow:0 10px 0 rgba(80,0,8,.35);animation:pop .28s ease-out}
 @keyframes pop{from{transform:translateY(24px) scale(.96);opacity:0}}
 .ticket h2{margin:0 0 6px;font-size:16px;color:var(--muted);font-weight:600}
 .tkamt{font:400 clamp(40px,11vw,56px)/1 Bungee,Rubik,sans-serif;white-space:nowrap}
 .tkres{font-weight:700;font-size:18px;margin-top:8px}
+.tkev{font-size:15px;color:var(--muted);margin-top:2px}
+.tkev:empty{display:none}
 .tkrows{border-top:2px dashed var(--line);margin:16px 0;padding-top:10px}
 .tkrows div{display:flex;justify-content:space-between;gap:12px;padding:5px 0;font-size:15px}
 .tkrows span{color:var(--muted)}
@@ -154,6 +157,16 @@ button:focus-visible,input:focus-visible{outline:3px solid #2b6cff;outline-offse
 .who b{display:block;font-size:18px;overflow-wrap:anywhere}
 [data-step=name] .who{margin:4px 0 10px}[data-step=name] .who b{font-size:16px}.who span{display:block;color:var(--muted);font-size:14px;overflow-wrap:anywhere}
 #nmrow[hidden]{display:none}
+[data-step=stake] .who{margin:4px 0 10px}[data-step=stake] .who b{font-size:16px}
+#skwho[hidden]{display:none}
+.stk{margin:2px 0 0}
+.stk[hidden]{display:none}
+.stk .seg button{font-size:14px;padding:0 2px;font-variant-numeric:tabular-nums}
+.stk .field{margin-top:6px}
+.stk .field input::placeholder{font-weight:500;color:var(--muted);opacity:1}
+.stkf{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px;color:var(--muted);min-height:40px}
+.auth .stkf .link{display:inline-block;font-size:13px;font-weight:600;min-height:40px;margin:0 -10px 0 0;white-space:nowrap}
+.auth .stkf .link[hidden]{display:none}
 #authv.must .xbtn{display:none}
 .auth{position:relative}
 .auth h2{padding-right:44px}
@@ -243,7 +256,7 @@ button:focus-visible,input:focus-visible{outline:3px solid #2b6cff;outline-offse
           <div class="row">
             <label class="lab" for="bet">Bet for each ball</label>
             <div class="bet">
-              <div class="field"><span>$</span><input id="bet" type="number" inputmode="decimal" min="0.1" step="0.1" value="1.00"></div>
+              <div class="field"><span class="cs">$</span><input id="bet" type="number" inputmode="decimal" min="0.1" step="0.01" value="1.00"></div>
               <button class="mini" id="half" aria-label="Divide the bet by 2">½</button>
               <button class="mini" id="dbl" aria-label="Multiply the bet by 2">2×</button>
             </div>
@@ -254,7 +267,7 @@ button:focus-visible,input:focus-visible{outline:3px solid #2b6cff;outline-offse
               <summary><span>Speed and stop rules<small id="advsum"></small></span></summary>
               <span class="lab" id="aspdl">Speed</span>
               <div class="seg" id="aspd" role="group" aria-labelledby="aspdl"></div>
-              <div class="arow"><label class="lab" for="aloss" style="margin:0">Stop when this run loses</label><div class="field"><span>$</span><input id="aloss" type="number" inputmode="decimal" min="0" step="1" value="25"></div></div>
+              <div class="arow"><label class="lab" for="aloss" style="margin:0">Stop when this run loses</label><div class="field"><span class="cs">$</span><input id="aloss" type="number" inputmode="decimal" min="0" step="1" value="25"></div></div>
               <label class="chk"><input type="checkbox" id="abig" checked>Stop after a hit of 10× or more</label>
             </details>
           </div>
@@ -298,8 +311,9 @@ button:focus-visible,input:focus-visible{outline:3px solid #2b6cff;outline-offse
     <h2 id="tkh">Cash-out ticket</h2>
     <div class="tkamt" id="tkamt">$0.00</div>
     <div class="tkres" id="tkres"></div>
+    <div class="tkev" id="tkev"></div>
     <div class="tkrows" id="tkrows"></div>
-    <button class="btn sun big" id="again">Buy in again for $100</button>
+    <button class="btn sun big" id="again">Buy in again</button>
     <button class="btn ghost big" id="close">Done</button>
   </div>
 </div>
@@ -313,12 +327,12 @@ button:focus-visible,input:focus-visible{outline:3px solid #2b6cff;outline-offse
         <button type="button" data-m="in" id="m-in">Sign in</button>
       </div>
       <h2 id="auh">Create your account</h2>
-      <p class="sub" id="asub">You start with $100 in play chips. Your balance and history are available on all your devices.</p>
+      <p class="sub" id="asub" hidden></p>
       <div id="minpk" hidden>
         <button class="btn inkb" id="pkin" type="button">Sign in with a passkey</button>
         <div class="or">or receive a code by email</div>
       </div>
-      <form id="ef"><div id="nmrow"><label class="lab" for="aname">First name or nickname</label><input class="inp" id="aname" type="text" autocomplete="nickname" maxlength="30" spellcheck="false"></div><label class="lab" for="aemail">Email</label><input class="inp" id="aemail" type="email" autocomplete="email" inputmode="email" required placeholder="you@example.com"><button class="btn sun" type="submit" id="efb">Create account</button></form>
+      <form id="ef"><div id="nmrow"><label class="lab" for="aname">First name or nickname</label><input class="inp" id="aname" type="text" autocomplete="nickname" maxlength="30" spellcheck="false"></div><label class="lab" for="aemail">Email</label><input class="inp" id="aemail" type="email" autocomplete="email" inputmode="email" required placeholder="you@example.com"><div class="stk" id="stk1"></div><button class="btn sun" type="submit" id="efb">Create account</button></form>
       <p class="msg" role="status"></p>
       <details class="pv"><summary>About your account</summary><p>You use your email to sign in. The game keeps your name, balance and cash-out history in your account. You can see them on all your devices. The owner of this site can also see them. To delete your account, open Account.</p></details>
     </div>
@@ -329,6 +343,14 @@ button:focus-visible,input:focus-visible{outline:3px solid #2b6cff;outline-offse
       <form id="nf"><label class="lab" for="nname">First name or nickname</label><input class="inp" id="nname" type="text" autocomplete="nickname" maxlength="30" spellcheck="false" required><button class="btn sun" type="submit">Save</button></form>
       <p class="msg" role="status"></p>
       <button class="link" type="button" id="nmout">Not this account? Sign out</button>
+    </div>
+    <div data-step="stake" hidden>
+      <h2 id="skh">Set your buy-in</h2>
+      <p class="who" id="skwho"><span>You are signed in as</span><b id="skem"></b></p>
+      <div class="stk" id="stk2"></div>
+      <button class="btn sun" type="button" id="sksave">Save</button>
+      <p class="msg" role="status"></p>
+      <button class="link" type="button" id="skout">Not this account? Sign out</button>
     </div>
     <div data-step="code" hidden>
       <h2 id="codeh">Check your email</h2>
@@ -347,11 +369,13 @@ button:focus-visible,input:focus-visible{outline:3px solid #2b6cff;outline-offse
     <div data-step="acct" hidden>
       <h2>Your account</h2>
       <p class="who"><b id="anm"></b><span id="aem"></span></p>
+      <p id="astake"></p>
       <p id="ainfo"></p>
       <button class="btn sun" type="button" id="pkadd2">Add a passkey</button>
       <button class="btn ghost" type="button" id="aout">Sign out</button>
       <p class="msg" role="status"></p>
       <p class="priv">If other persons use this computer, sign out after you play.</p>
+      <button class="link" type="button" id="astk">Change your buy-in</button>
       <button class="link" type="button" id="aname2">Change your name</button>
       <button class="link" type="button" id="pkadd3">Add a passkey for a different device</button>
       <button class="link danger" type="button" id="adel">Delete my account</button>
@@ -377,28 +401,37 @@ const TABLES={
   12:{low:[10,3,1.6,1.4,1.1,1,0.5,1,1.1,1.4,1.6,3,10],medium:[33,11,4,2,1.1,0.6,0.3,0.6,1.1,2,4,11,33],high:[170,24,8.1,2,0.7,0.2,0.2,0.2,0.7,2,8.1,24,170]},
   16:{low:[16,9,2,1.4,1.4,1.2,1.1,1,0.5,1,1.1,1.2,1.4,1.4,2,9,16],medium:[110,41,10,5,3,1.5,1,0.5,0.3,0.5,1,1.5,3,5,10,41,110],high:[1000,130,26,9,4,2,0.2,0.2,0.2,0.2,0.2,2,4,9,26,130,1000]}
 };
-const BUYIN=100, KEY='plinko-v1', RISKS=['low','medium','high'], ROWS=[8,12,16];
+const KEY='plinko-v1', RISKS=['low','medium','high'], ROWS=[8,12,16];
 const $=id=>document.getElementById(id);
 const RTP={};for(const n of ROWS){RTP[n]={};for(const k of RISKS){let c=1,t=0;TABLES[n][k].forEach((m,i)=>{t+=c*m;c=c*(n-i)/(i+1)});RTP[n][k]=t/2**n}}
-const fmt=new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'});
-const money=v=>fmt.format(v);
-const signed=v=>(v>0.004?'+':v<-0.004?'−':'')+fmt.format(Math.abs(v));
+/* money: each account has one currency and one buy-in, the price of a good evening out for that player.
+   Tiles and limits for each currency are below (the same limits are in lib/state.js). Amounts are never converted. */
+const CURS={USD:{loc:'en-US',sym:'$',tiles:[50,100,200,300],def:100,min:10,max:5000,unit:.01},INR:{loc:'en-IN',sym:'\u20b9',tiles:[1000,2000,3000,5000],def:2000,min:200,max:200000,unit:1}};
+function guessCur(){try{const z=Intl.DateTimeFormat().resolvedOptions().timeZone;return z==='Asia/Kolkata'||z==='Asia/Calcutta'?'INR':'USD'}catch(e){return'USD'}}
+let CUR=guessCur();
+const NF={};
+function nf(c,whole){const k=c+(whole?'0':'2');return NF[k]||(NF[k]=new Intl.NumberFormat(CURS[c].loc,{style:'currency',currency:c,...(whole?{maximumFractionDigits:0}:c==='USD'?{}:{trailingZeroDisplay:'stripIfInteger'})}))}
+const money=v=>nf(CUR).format(v);
+const whole=(v,c)=>nf(c||CUR,1).format(v);
+const signed=v=>(v>0.004?'+':v<-0.004?'−':'')+money(Math.abs(v));
+const fitSize=(t,steps)=>{for(const[n,px]of steps)if(t.length>n)return px;return''};
 const day=v=>v?new Date(v).toLocaleDateString('en-US',{day:'numeric',month:'short',year:'numeric'}):'Earlier';
 const r2=v=>Math.round(v*100)/100;
 const rnd=()=>{const a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]/4294967296};
 let holding=null,holdT=0,ptrDown=false,spaceTaken=false,navKeys=false;
 document.addEventListener('pointerdown',()=>{navKeys=false},true);
-const DEF={balance:0,boughtIn:0,buyins:0,pending:0,bet:1,rows:8,risk:'medium',tab:'manual',mode:'manual',dropped:0,wagered:0,best:0,hist:[],muted:false,exp:0,started:null,log:[],auto:{n:50,fast:false,loss:25,big:true}};
+const DEF={balance:0,boughtIn:0,buyins:0,pending:0,unit:0,scale:100,bet:1,rows:8,risk:'medium',tab:'manual',mode:'manual',dropped:0,wagered:0,best:0,hist:[],muted:false,exp:0,started:null,log:[],auto:{n:50,fast:false,loss:25,big:true}};
 let S={...DEF,hist:[],log:[]};
 
 function load(d){
   const num=(v,f)=>Number.isFinite(+v)&&v!==null&&v!==''?+v:f;
   d=d&&typeof d==='object'?d:{};
   S={...DEF,hist:[],log:[]};
-  for(const k of ['balance','boughtIn','buyins','pending','bet','dropped','wagered','best'])S[k]=Math.max(0,num(d[k],DEF[k]));
+  for(const k of ['balance','boughtIn','buyins','pending','unit','bet','dropped','wagered','best'])S[k]=Math.max(0,num(d[k],DEF[k]));
+  if(S.buyins>0&&!S.unit)S.unit=100;S.scale=num(d.scale,100)>0?num(d.scale,100):100;
   S.exp=num(d.exp,0);S.started=typeof d.started==='string'?d.started:null;
   const N=v=>Number.isFinite(+v)?+v:0,T=v=>typeof v==='string'&&!isNaN(Date.parse(v))?v:null;
-  S.log=Array.isArray(d.log)?d.log.filter(x=>x&&typeof x==='object').slice(-500).map(x=>({start:T(x.start),end:T(x.end),in:N(x.in),out:N(x.out),net:N(x.net),wag:N(x.wag),balls:N(x.balls),best:N(x.best),exp:x.exp==null?null:N(x.exp),legacy:x.legacy===true,n:N(x.n)||1})):[];
+  S.log=Array.isArray(d.log)?d.log.filter(x=>x&&typeof x==='object').slice(-500).map(x=>({start:T(x.start),end:T(x.end),in:N(x.in),out:N(x.out),net:N(x.net),wag:N(x.wag),balls:N(x.balls),best:N(x.best),exp:x.exp==null?null:N(x.exp),legacy:x.legacy===true,n:N(x.n)||1,unit:N(x.unit)>0?N(x.unit):100})):[];
   if(!S.log.length&&+d.sessions>0)S.log=[{legacy:true,n:+d.sessions,in:N(d.lifeIn),out:N(d.lifeOut),net:r2(N(d.lifeOut)-N(d.lifeIn)),wag:0,balls:0,best:0,exp:null,start:null,end:null}];
   S.rows=ROWS.includes(+d.rows)?+d.rows:8;
   S.risk=RISKS.includes(d.risk)?d.risk:'medium';
@@ -407,9 +440,16 @@ function load(d){
   const a=d.auto&&typeof d.auto==='object'?d.auto:{};
   S.auto={n:[10,50,100,0].includes(+a.n)?+a.n:50,fast:a.fast===true,loss:Number.isFinite(+a.loss)&&+a.loss>=0?r2(+a.loss):25,big:a.big!==false};
   S.hist=Array.isArray(d.hist)?d.hist.map(Number).filter(Number.isFinite).slice(0,14):[];
-  S.bet=Math.max(0.1,r2(S.bet));
+  S.bet=Math.max(0.01,r2(S.bet));
   S.balance=r2(S.balance+S.pending);S.pending=0;
 }
+/* buy-in: the account's amount, or the default for the currency when there is no account.
+   S.unit is the buy-in of the open session. Bets scale with it: default 1%, minimum 0.1%. */
+const stake=()=>me&&me.buyin>0?me.buyin:CURS[CUR].def;
+function minBet(){const v=(S.unit||stake())/1000,p=10**Math.floor(Math.log10(v));return Math.max(CURS[CUR].unit,r2(Math.floor(v/p+1e-9)*p))}
+const defBet=u=>Math.max(minBet(),r2(u/100));
+function applyStake(){const u=stake();if(S.scale!==u){S.scale=u;S.bet=defBet(u);S.auto.loss=r2(u/4)}else if(S.bet<minBet())S.bet=minBet()}
+function evText(n){const v=Math.abs(n);if(v<0.05)return'';const t=v.toFixed(1).replace(/\.0$/,'');return`${t} evening${t==='1'?'':'s'} out`}
 function saveLocal(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 function save(){saveLocal();if(me){dirty=true;meta({owner:me.email,rev,dirty:true});if(!pushT)pushT=setTimeout(push,4000)}}
 
@@ -606,23 +646,24 @@ function rtp(n,risk){return TABLES[n][risk].reduce((a,m,k)=>a+comb(n,k)*m,0)/2**
 function chipCol(m){return m>=10?['#c3127a','#fff']:m>=3?['#ff4f3b','#fff']:m>=1?['#ff9d2e','#1d1a33']:['#ffd23c','#1d1a33']}
 function ui(){
   const live=balls.length>0||AUTO.on,started=S.buyins>0;
-  $('bal').textContent=money(S.balance);
+  const be=$('bal'),bt=money(S.balance);be.textContent=bt;be.style.fontSize=fitSize(bt,[[11,'21px'],[10,'24px'],[9,'26px'],[8,'30px'],[7,'34px']]);
   const net=netNow(),ne=$('net');
   ne.textContent=(net>0?'+':net<0?'\u2212':'')+money(Math.abs(net));ne.className='netv '+(net>0?'up':net<0?'down':'');
   $('bought').textContent=money(S.boughtIn);
   $('balls').textContent=S.dropped.toLocaleString('en-US');
   $('wag').textContent=money(S.wagered);
   $('best').textContent=S.best?fmtM(S.best)+'\u00d7':'None';
-  const broke=started&&!live&&S.balance<Math.min(S.bet,0.1)+1e-9;
+  const broke=started&&!live&&S.balance<Math.min(S.bet,minBet())+1e-9;
   const buy=$('buy'),cash=$('cash');
   $('acts').className='acts'+(started?'':' solo');
-  buy.textContent=started?'Re-buy $100':'Buy in $100';
+  buy.textContent=started?`Re-buy ${whole(S.unit)}`:`Buy in ${whole(stake())}`;
   buy.className='btn '+(!started||(S.balance<S.bet&&!live)?'sun':'ghost');
   cash.textContent=AUTO.on?'Cash out (auto is on)':live?'Cash out (balls on the board)':'Cash out '+money(S.balance);
   cash.disabled=!started||live;
   histUI();
   for(const id of ['bet','half','dbl'])$(id).disabled=AUTO.on;
-  const bi=$('bet');if(document.activeElement!==bi)bi.value=S.bet.toFixed(2);
+  const bi=$('bet');bi.min=minBet();bi.step=CURS[CUR].unit;if(document.activeElement!==bi)bi.value=CUR==='USD'?S.bet.toFixed(2):String(S.bet);
+  for(const e of document.querySelectorAll('.app .cs'))e.textContent=CURS[CUR].sym;
   // tabs
   for(const b of document.querySelectorAll('.tabs [role=tab]')){const on=b.dataset.t===S.tab;b.setAttribute('aria-selected',String(on));b.tabIndex=on?0:-1}
   $('pplay').hidden=S.tab==='stats';$('pstats').hidden=S.tab!=='stats';
@@ -638,7 +679,7 @@ function ui(){
   g.classList.toggle('held',!!holding);
   $('cost').textContent=cost;
   $('msg').classList.toggle('hint',!started);
-  $('msg').textContent=!started?'Buy in to receive $100 in chips.':broke?'You have no chips. Re-buy to play again.':g.disabled&&!live?'Your bet is more than your balance.':'';
+  $('msg').textContent=!started?`Buy in to receive ${whole(stake())} in chips.`:broke?'You have no chips. Re-buy to play again.':g.disabled&&!live?'Your bet is more than your balance.':'';
   renderRecent();
   const sd=$('snd');sd.classList.toggle('off',S.muted);sd.setAttribute('aria-pressed',String(S.muted));sd.title=S.muted?'Unmute':'Mute';
 }
@@ -661,31 +702,32 @@ function holdStart(src){
 }
 function holdStop(){if(!holding)return;holding=null;clearTimeout(holdT);$('go').classList.remove('held')}
 function setTab(t){S.tab=t;if(t!=='stats')S.mode=t;save();ui()}
-$('buy').onclick=()=>{audio();if(!S.buyins){S.started=new Date().toISOString();S.exp=0}S.buyins++;S.boughtIn=r2(S.boughtIn+BUYIN);S.balance=r2(S.balance+BUYIN);coinSound();save();ui()};
-function entry(x){return{start:x.started,end:new Date().toISOString(),in:x.boughtIn,out:r2(x.balance+x.pending),net:r2(x.balance+x.pending-x.boughtIn),wag:x.wagered,balls:x.dropped,best:x.best,exp:r2(x.exp),legacy:false,n:1}}
+$('buy').onclick=()=>{audio();if(!S.buyins){S.started=new Date().toISOString();S.exp=0;S.unit=stake()}S.buyins++;S.boughtIn=r2(S.boughtIn+S.unit);S.balance=r2(S.balance+S.unit);coinSound();save();ui()};
+function entry(x){return{start:x.started,end:new Date().toISOString(),in:x.boughtIn,out:r2(x.balance+x.pending),net:r2(x.balance+x.pending-x.boughtIn),wag:x.wagered,balls:x.dropped,best:x.best,exp:r2(x.exp),legacy:false,n:1,unit:x.unit||100}}
 function autoUI(){
   seg('acnt',[10,50,100,0],S.auto.n,v=>v?v:'No limit',v=>{S.auto.n=+v;save();ui()},AUTO.on);
   seg('aspd',['steady','fast'],S.auto.fast?'fast':'steady',v=>v==='fast'?'Fast':'Normal',v=>{S.auto.fast=v==='fast';save();ui()},AUTO.on);
   const al=$('aloss');if(document.activeElement!==al)al.value=S.auto.loss;al.disabled=AUTO.on;$('abig').checked=S.auto.big;$('abig').disabled=AUTO.on;
-  $('advsum').textContent=[S.auto.fast?'Fast':'Normal',S.auto.loss?`stop at \u2212$${S.auto.loss}`:'',S.auto.big?'stop at 10\u00d7':''].filter(Boolean).join(', ');
+  $('advsum').textContent=[S.auto.fast?'Fast':'Normal',S.auto.loss?`stop at \u2212${Number.isInteger(S.auto.loss)?whole(S.auto.loss):money(S.auto.loss)}`:'',S.auto.big?'stop at 10\u00d7':''].filter(Boolean).join(', ');
 }
 function totals(){
   const L=S.log,real=L.filter(x=>!x.legacy);
   const n=L.reduce((a,x)=>a+(x.legacy?x.n:1),0),net=r2(L.reduce((a,x)=>a+x.net,0));
-  const wag=r2(real.reduce((a,x)=>a+x.wag,0)),back=r2(real.reduce((a,x)=>a+x.wag+x.net,0)),exp=r2(real.reduce((a,x)=>a+(x.exp||0),0)),rnet=r2(real.reduce((a,x)=>a+x.net,0));
-  return{n,net,wag,back,exp,real,rnet};
+  const wag=r2(real.reduce((a,x)=>a+x.wag,0)),back=r2(real.reduce((a,x)=>a+x.wag+x.net,0)),exp=r2(real.reduce((a,x)=>a+(x.exp||0),0)),rnet=r2(real.reduce((a,x)=>a+x.net,0)),ev=real.reduce((a,x)=>a+x.net/(x.unit||100),0);
+  return{n,net,wag,back,exp,real,rnet,ev};
 }
 function sumLines(t){
   if(!t.n)return['<p>Cash out to record a session. All your sessions show here.</p>'];
   const out=[];
   if(t.wag>0)out.push(`<p>The board paid back <b>${(t.back/t.wag*100).toFixed(1)}%</b> of <b>${money(t.wag)}</b> in bets.</p>`,`<p>Expected result: <b>${signed(t.exp)}</b>. Your result: <b>${signed(t.rnet)}</b>.</p>`);
+  if(evText(t.ev))out.push(t.ev<0?`<p>Your total loss is the cost of <b>${evText(t.ev)}</b>.</p>`:`<p>Your total win pays for <b>${evText(t.ev)}</b>.</p>`);
   if(t.n>t.real.length)out.push('<p>Sessions from before this history are in the net only.</p>');
   return out;
 }
 function histUI(){
   const t=totals(),hn=$('hnet');
   hn.textContent=signed(t.net);hn.className=t.net>0.004?'up':t.net<-0.004?'down':'';
-  hn.style.fontSize=hn.textContent.length>8?'17px':'22px';
+  hn.style.fontSize=fitSize(hn.textContent,[[11,'14px'],[8,'17px']])||'22px';
   $('hn').textContent=t.n?`${t.n} session${t.n>1?'s':''}`:'No sessions';
   $('hsum').innerHTML=sumLines(t).join('');
   if(!$('sq').hidden)renderSq();
@@ -700,8 +742,9 @@ function renderSq(){
   if(!L.length){body.innerHTML='<p class="empty">There are no cash-outs. Play a session. Then cash out.</p>';return}
   if(sqView==='tiles'){
     body.innerHTML='<div class="grid">'+L.map(x=>{const c=x.net>0.004?'up':x.net<-0.004?'down':'';
-      return x.legacy?`<div class="st ${c}"><span>Earlier</span><b>${signed(x.net)}</b><span>${x.n} session${x.n>1?'s':''}</span></div>`
-      :`<div class="st ${c}"><span>#${x.i} · ${day(x.end)}</span><b>${signed(x.net)}</b><span>${x.balls} ball${x.balls===1?'':'s'}</span></div>`}).join('')+'</div>';
+      const t=signed(x.net),b=`<b style="font-size:${fitSize(t,[[10,'12px'],[8,'14px']])||'17px'}">${t}</b>`;
+      return x.legacy?`<div class="st ${c}"><span>Earlier</span>${b}<span>${x.n} session${x.n>1?'s':''}</span></div>`
+      :`<div class="st ${c}"><span>#${x.i} · ${day(x.end)}</span>${b}<span>${x.balls} ball${x.balls===1?'':'s'}</span></div>`}).join('')+'</div>';
     return;
   }
   const cnt={up:0,down:0,even:0};
@@ -735,13 +778,15 @@ $('htile').onclick=openSq;$('sqx').onclick=closeSq;$('sqback').onclick=closeSq;
 function cashOut(){
   if(!S.buyins||balls.length||AUTO.on)return;
   audio();
-  const e=entry(S),t={out:e.out,inn:e.in,balls:e.balls,wag:e.wag,best:e.best,net:e.net,exp:e.exp};
+  const e=entry(S),t={out:e.out,inn:e.in,balls:e.balls,wag:e.wag,best:e.best,net:e.net,exp:e.exp,unit:e.unit};
   S.log.push(e);S.log=S.log.slice(-500);
-  Object.assign(S,{balance:0,boughtIn:0,buyins:0,pending:0,dropped:0,wagered:0,best:0,hist:[],exp:0,started:null});
+  Object.assign(S,{balance:0,boughtIn:0,buyins:0,pending:0,unit:0,dropped:0,wagered:0,best:0,hist:[],exp:0,started:null});
   save();ui();if(me)push();
-  $('tkamt').textContent=money(t.out);
+  const ta=$('tkamt'),tt=money(t.out);ta.textContent=tt;ta.style.fontSize=fitSize(tt,[[11,'27px'],[9,'32px'],[7,'40px']]);
   const r=$('tkres');r.textContent=t.net>0?`You won ${money(t.net)}.`:t.net<0?`You lost ${money(-t.net)}.`:'You did not win or lose money.';
   r.className='tkres '+(t.net>0?'up':t.net<0?'down':'');
+  const ev=evText(t.net/t.unit);$('tkev').textContent=!ev?'':t.net>0?`This pays for ${ev}.`:`This is the cost of ${ev}.`;
+  $('again').textContent=`Buy in again for ${whole(stake())}`;
   const when=new Date().toLocaleString('en-US',{day:'numeric',month:'short',year:'numeric',hour:'numeric',minute:'2-digit'});
   const rows=[['Bought in',money(t.inn)],['Cashed out',money(t.out)],['Total bets',money(t.wag)],['Balls dropped',t.balls.toLocaleString('en-US')],['Best hit',t.best?fmtM(t.best)+'×':'None'],['Expected result',signed(t.exp)],['Time',when]];
   $('tkrows').innerHTML=rows.map(([a,b])=>`<div><span>${a}</span><b>${b}</b></div>`).join('');
@@ -766,10 +811,10 @@ $('riskS').onchange=e=>{S.risk=e.target.value;save();draw();ui()};
 $('rowsS').onchange=e=>{S.rows=+e.target.value;save();geom();draw();ui()};
 $('aloss').onchange=e=>{const v=parseFloat(e.target.value);S.auto.loss=Number.isFinite(v)&&v>0?r2(v):0;save();ui()};
 $('abig').onchange=e=>{S.auto.big=e.target.checked;save();ui()};
-const setBet=v=>{v=Number.isFinite(v)?v:1;S.bet=Math.max(0.1,r2(v));save();ui()};
+const setBet=v=>{v=Number.isFinite(v)?v:defBet(S.unit||stake());S.bet=Math.max(minBet(),r2(v));save();ui()};
 $('bet').onchange=e=>setBet(parseFloat(e.target.value));
 $('half').onclick=()=>setBet(S.bet/2);
-$('dbl').onclick=()=>setBet(S.buyins&&S.balance>=0.1?Math.min(S.bet*2,S.balance):S.bet*2);
+$('dbl').onclick=()=>setBet(S.buyins&&S.balance>=minBet()?Math.min(S.bet*2,S.balance):S.bet*2);
 $('snd').onclick=()=>{S.muted=!S.muted;if(!S.muted)audio();save();ui()};
 document.addEventListener('keydown',e=>{
   if(!$('authv').hidden){if(e.key==='Escape')closeAuth();return}
@@ -788,14 +833,35 @@ document.addEventListener('keyup',e=>{if(e.code==='Space'&&spaceTaken){spaceTake
 /* accounts and sync: email code or passkey sign-in, state saved per account on the server */
 let me=null,rev=0,pushT=0,pushing=false,dirty=false,later=null,authEmail='',swa=null,delArm=0,gated=false,canGate=false,demoNext=0;
 const PK=!!(window.PublicKeyCredential&&navigator.credentials);
-let amode='up',authName='',needName=false,afterName=null;
+let amode='up',authName='',authStake=null,needName=false,needStake=false,offerPk=false;
+const hasHist=()=>S.log.length>0||S.buyins>0;
+/* the buy-in question: 4 tiles in one currency, a field for a different amount, and a quiet link to the other currency */
+function picker(el){
+  const st={cur:CUR,amt:0,lock:false};
+  el.innerHTML=`<span class="lab" id="${el.id}q">How much does a good evening out cost you?</span><div class="seg" role="group" aria-labelledby="${el.id}q"></div><div class="field"><span class="cs"></span><input type="text" inputmode="numeric" autocomplete="off" maxlength="6" placeholder="A different amount" aria-label="A different amount"></div><div class="stkf"><span>This amount is your buy-in.</span><button class="link" type="button"></button></div>`;
+  const tiles=el.querySelector('.seg'),inp=el.querySelector('input'),sw=el.querySelector('.link');
+  const show=()=>{const c=CURS[st.cur];
+    tiles.innerHTML=c.tiles.map(v=>`<button type="button" data-v="${v}" aria-pressed="${!inp.value&&v===st.amt}">${whole(v,st.cur)}</button>`).join('');
+    el.querySelector('.cs').textContent=c.sym;sw.textContent=`Show amounts in ${CURS[st.cur==='USD'?'INR':'USD'].sym}`;sw.hidden=st.lock};
+  tiles.onclick=e=>{const b=e.target.closest('button');if(!b)return;st.amt=+b.dataset.v;inp.value='';amsg('');show();tiles.querySelector('[aria-pressed=true]').focus()};
+  inp.oninput=()=>{inp.value=inp.value.replace(/\D/g,'');if(inp.value)st.amt=0;show()};
+  sw.onclick=()=>{st.cur=st.cur==='USD'?'INR':'USD';st.amt=0;inp.value='';amsg('');show()};
+  show();
+  return{
+    set(cur,amt,lock){st.cur=CURS[cur]?cur:'USD';st.lock=!!lock;const t=CURS[st.cur].tiles.includes(amt);st.amt=t?amt:0;inp.value=!t&&amt>0?String(amt):'';show()},
+    get(){const c=CURS[st.cur];
+      if(inp.value){const n=parseInt(inp.value,10);return n>=c.min&&n<=c.max?{cur:st.cur,amt:n}:{err:`Type an amount from ${whole(c.min,st.cur)} to ${whole(c.max,st.cur)}.`}}
+      return st.amt?{cur:st.cur,amt:st.amt}:{err:'Select an amount.'}}
+  };
+}
+const P1=picker($('stk1')),P2=picker($('stk2'));
 function knownHere(){try{return localStorage.getItem('plinko-known')==='1'}catch(e){return false}}
 function setMode(m){
   amode=m;amsg('');
   for(const b of document.querySelectorAll('#amodes button')){const on=b.dataset.m===m;b.setAttribute('aria-pressed',String(on))}
   $('auh').textContent=m==='up'?'Create your account':'Welcome back';
-  $('asub').textContent=m==='up'?'You start with $100 in play chips. Your balance and history are available on all your devices.':(PK?'Use your passkey, or receive a code by email.':'We send a sign-in code to your email.');
-  $('nmrow').hidden=m!=='up';$('aname').required=m==='up';
+  $('asub').hidden=m==='up';$('asub').textContent=PK?'Use your passkey, or receive a code by email.':'We send a sign-in code to your email.';
+  $('nmrow').hidden=$('stk1').hidden=m!=='up';$('aname').required=m==='up';
   $('minpk').hidden=m!=='in'||!PK;$('efb').textContent=m==='up'?'Create account':'Send a code';
 }
 async function api(path,o={}){
@@ -818,7 +884,9 @@ async function push(keep){
   meta({owner:me.email,rev,dirty});
   if(dirty&&!pushT)pushT=setTimeout(push,4000);
 }
-function adopt(st){if(balls.length){later=st;return}load(st);saveLocal();geom();draw();ui()}
+function adopt(st){if(balls.length){later=st;return}load(st);if(me&&me.buyin)applyStake();saveLocal();geom();draw();ui()}
+/* after the account and its game are loaded: scale the bet to the buy-in when the buy-in is new or changed */
+function settle(){if(me&&me.buyin){const k=[S.bet,S.scale,S.auto.loss].join();applyStake();if(k!==[S.bet,S.scale,S.auto.loss].join())save()}ui()}
 const idle=()=>new Promise(res=>{const c=()=>balls.length?setTimeout(c,200):res();c()});
 async function syncIn(){
   stopAuto('Auto stopped while your account loads.');
@@ -847,13 +915,14 @@ function step(n){
   $('authv').hidden=false;
   if(n==='acct'){
     $('anm').textContent=me.name||'No name';$('aem').textContent=me.email;
+    $('astake').textContent=me.buyin?`Your buy-in is ${whole(me.buyin)}.`:'';$('astk').hidden=!me.buyin;
     $('ainfo').textContent=(me.passkeys?`This account has ${me.passkeys} passkey${me.passkeys>1?'s':''}. `:'This account has no passkeys. ')+'The game saves your balance and history to your account while you play.';
     $('pkadd2').hidden=!PK||me.passkeys>0;$('pkadd3').hidden=!PK||!me.passkeys;$('adel').textContent='Delete my account';delArm=0;
   }
   if(n==='email')setMode(knownHere()?'in':'up');
-  const f=$('authv').querySelector(`[data-step="${n}"] input`)||$('authv').querySelector(`[data-step="${n}"] .btn`);f&&f.focus();
+  const box=$('authv').querySelector(`[data-step="${n}"]`),f=(n==='stake'?box.querySelector('.seg button'):[...box.querySelectorAll('input')].find(i=>i.offsetParent))||box.querySelector('.btn');f&&f.focus();
 }
-function closeAuth(){if(gated||needName)return;$('authv').hidden=true;$('acct').focus()}
+function closeAuth(){if(gated||needName||needStake)return;$('authv').hidden=true;$('acct').focus()}
 /* sign-in gate: shown whenever accounts are available and nobody is signed in; the board plays demo balls behind it */
 function setGate(on){
   gated=on;$('authv').classList.toggle('gate',on);document.querySelector('.app').inert=on;
@@ -868,17 +937,39 @@ async function signedIn(user,created){
   $('pkh').textContent=created?'Your account is ready. Add a passkey?':'Add a passkey?';
   if(gated){setGate(false);balls=balls.filter(b=>!b.demo)}
   await syncIn();
-  const next=()=>{if(PK&&!me.passkeys)step('passkey');else closeAuth()};
-  if(!me.name)askName(next);else next();
+  CUR=me.cur||(hasHist()?'USD':guessCur());settle();
+  offerPk=true;onboard();
 }
-function askName(then){needName=true;afterName=then||null;$('authv').classList.add('must');$('nmh').textContent='What is your name?';$('nname').value='';$('nmem').textContent=me.email;$('nmout').hidden=false;step('name')}
+/* one-time cards after sign-in, in this order: name, buy-in, passkey offer */
+function onboard(){
+  if(!me)return;
+  if(!me.name)return askName();
+  if(!me.buyin)return askStake();
+  if(offerPk&&PK&&!me.passkeys){offerPk=false;return step('passkey')}
+  offerPk=false;if(!$('authv').hidden)closeAuth();
+}
+function askStake(){needStake=true;$('authv').classList.add('must');$('skh').textContent='Set your buy-in';$('skwho').hidden=false;$('skem').textContent=me.email;$('skout').hidden=false;P2.set(me.cur||(hasHist()?'USD':guessCur()),0,hasHist());step('stake')}
+$('sksave').onclick=async e=>{
+  const s=P2.get();if(s.err){amsg(s.err);return}
+  const btn=e.currentTarget;busy(btn,true,'Wait…');const r=await api('/api/auth?op=set-stake',{method:'POST',body:{cur:s.cur,buyin:s.amt}});busy(btn,false);
+  if(!r.ok){amsg(r.error||'The buy-in was not saved.');return}
+  me=r.user;CUR=me.cur;settle();
+  const was=needStake;needStake=false;$('authv').classList.remove('must');
+  if(was)onboard();else{step('acct');amsg('Your buy-in is saved.',true)}
+};
+$('skout').onclick=()=>$('aout').click();
+$('astk').onclick=()=>{
+  if(S.buyins>0){amsg('Cash out first. Then you can change your buy-in.');return}
+  $('skh').textContent='Change your buy-in';$('skwho').hidden=true;$('skout').hidden=true;P2.set(me.cur||CUR,me.buyin,hasHist());step('stake');
+};
+function askName(){needName=true;$('authv').classList.add('must');$('nmh').textContent='What is your name?';$('nname').value='';$('nmem').textContent=me.email;$('nmout').hidden=false;step('name')}
 $('nf').onsubmit=async e=>{
   e.preventDefault();const btn=e.target.querySelector('.btn'),v=$('nname').value.trim();
   if(!v){amsg('Type your first name or a nickname.');return}
   busy(btn,true,'Wait…');const r=await api('/api/auth?op=set-name',{method:'POST',body:{name:v}});busy(btn,false);
   if(!r.ok){amsg(r.error||'The name was not saved.');return}
-  me=r.user;const was=needName,then=afterName;needName=false;afterName=null;$('authv').classList.remove('must');
-  if(was){if(then)then();else closeAuth()}else{step('acct');amsg('Your name is saved.',true)}
+  me=r.user;const was=needName;needName=false;$('authv').classList.remove('must');
+  if(was)onboard();else{step('acct');amsg('Your name is saved.',true)}
 };
 $('aname2').onclick=()=>{$('nmh').textContent='Change your name';$('nname').value=me&&me.name||'';$('nmem').textContent=me.email;$('nmout').hidden=true;step('name')};
 $('nmout').onclick=()=>$('aout').click();
@@ -890,13 +981,14 @@ $('authv').onclick=e=>{if(e.target.id==='authv')closeAuth()};
 $('ef').onsubmit=async e=>{
   e.preventDefault();const btn=e.target.querySelector('.btn');authEmail=$('aemail').value.trim().toLowerCase();authName=amode==='up'?$('aname').value.trim():'';
   if(amode==='up'&&!authName){amsg('Type your first name or a nickname.');$('aname').focus();return}
+  authStake=null;if(amode==='up'){const k=P1.get();if(k.err){amsg(k.err);return}authStake=k}
   busy(btn,true,'Wait…');const r=await api('/api/auth?op=email-start',{method:'POST',body:{email:authEmail}});busy(btn,false);
   if(!r.ok){amsg(r.error||'We could not send the code.');return}
   step('code');$('codeh').textContent=amode==='up'?'Confirm your email':'Check your email';$('codeto').textContent=`Type the 6-digit code that we sent to ${authEmail}. You can use the code for 10 minutes.`;$('acode').value='';
 };
 $('cf').onsubmit=async e=>{
   e.preventDefault();const btn=e.target.querySelector('.btn');
-  busy(btn,true,'Wait…');const r=await api('/api/auth?op=email-verify',{method:'POST',body:{email:authEmail,code:$('acode').value,name:authName}});busy(btn,false);
+  busy(btn,true,'Wait…');const r=await api('/api/auth?op=email-verify',{method:'POST',body:{email:authEmail,code:$('acode').value,name:authName,...(authStake?{cur:authStake.cur,buyin:authStake.amt}:{})}});busy(btn,false);
   if(!r.ok){amsg(r.error||'Sign-in failed.');return}
   await signedIn(r.user,r.created);
 };
@@ -926,7 +1018,7 @@ async function addPasskey(e){
   }catch(err){busy(btn,false);amsg(err&&err.name==='InvalidStateError'?'This device already has a passkey for your account.':err&&err.name==='NotAllowedError'?'The passkey was not added.':(err&&err.message)||'The passkey was not added. Do the step again.')}
 }
 $('pkadd1').onclick=addPasskey;$('pkadd2').onclick=addPasskey;$('pkadd3').onclick=addPasskey;
-function toGuest(){stopAuto();me=null;needName=false;afterName=null;$('authv').classList.remove('must');rev=0;dirty=false;clearTimeout(pushT);try{localStorage.removeItem('plinko-sync')}catch(e){}
+function toGuest(){stopAuto();me=null;needName=needStake=offerPk=false;$('authv').classList.remove('must');CUR=guessCur();P1.set(CUR,0,false);rev=0;dirty=false;clearTimeout(pushT);try{localStorage.removeItem('plinko-sync')}catch(e){}
   balls=[];flashes=[];floats=[];later=null;load({muted:S.muted});saveLocal();geom();draw();ui();acctUI();closeAuth();if(canGate)setGate(true)}
 $('aout').onclick=async()=>{if(dirty){clearTimeout(pushT);await push()}await api('/api/auth?op=logout',{method:'POST',body:{}});toGuest()};
 $('adel').onclick=async e=>{
@@ -938,12 +1030,13 @@ $('adel').onclick=async e=>{
 addEventListener('pagehide',()=>{if(me&&dirty){clearTimeout(pushT);push(true)}});
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&me&&dirty){clearTimeout(pushT);push(true)}});
 async function initAccount(){
-  if(!/^https?:$/.test(location.protocol))return;
+  const guest=()=>{applyStake();saveLocal();ui()};   // no accounts here: play on this device with the default buy-in
+  if(!/^https?:$/.test(location.protocol))return guest();
   const r=await api('/api/auth?op=me');
-  if(!r.ok||!('user' in r)||!r.ready||!r.ready.db){if(gated)setGate(false),$('authv').hidden=true;return}
+  if(!r.ok||!('user' in r)||!r.ready||!r.ready.db){if(gated)setGate(false),$('authv').hidden=true;return guest()}
   $('acct').hidden=false;canGate=!!r.ready.email;
   try{localStorage.setItem('plinko-gate',canGate?'1':'0')}catch(e){}
-  if(r.user){me=r.user;acctUI();if(gated){setGate(false);$('authv').hidden=true;balls=balls.filter(b=>!b.demo)}await syncIn();if(!me.name)askName()}
+  if(r.user){me=r.user;acctUI();if(gated){setGate(false);$('authv').hidden=true;balls=balls.filter(b=>!b.demo)}await syncIn();CUR=me.cur||(hasHist()?'USD':guessCur());settle();onboard()}
   else if(canGate&&!gated)setGate(true);
 }
 

@@ -23,10 +23,11 @@ export default async function handler(req, res) {
       const st = (srec && srec.state) || {};
       const log = (Array.isArray(st.log) ? st.log : []).slice(-500).map(x => ({
         end: t(x && x.end), in: n(x && x.in), out: n(x && x.out), net: n(x && x.net), wag: n(x && x.wag),
-        balls: n(x && x.balls), best: n(x && x.best), exp: x && x.exp != null ? n(x.exp) : null, legacy: !!(x && x.legacy), n: n(x && x.n) || 1
+        balls: n(x && x.balls), best: n(x && x.best), exp: x && x.exp != null ? n(x.exp) : null, legacy: !!(x && x.legacy), n: n(x && x.n) || 1,
+        unit: n(x && x.unit) || 100
       }));
       players.push({
-        name: String(u.name || ''), email: String(u.email || ''), created: t(u.created), lastSeen: t(u.lastSeen), passkeys: n(rows[i * 3 + 2]),
+        name: String(u.name || ''), email: String(u.email || ''), cur: u.cur === 'INR' ? 'INR' : 'USD', buyin: n(u.buyin), created: t(u.created), lastSeen: t(u.lastSeen), passkeys: n(rows[i * 3 + 2]),
         balance: n(st.balance), boughtIn: n(st.boughtIn), wagered: n(st.wagered), dropped: n(st.dropped), log
       });
     }
