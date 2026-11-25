@@ -127,6 +127,13 @@ button:focus-visible,input:focus-visible{outline:3px solid #2b6cff;outline-offse
 .or{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:13px;margin:14px 0}
 .or::before,.or::after{content:"";flex:1;border-top:1px solid var(--line)}
 .priv{font-size:13px;color:var(--muted);margin:14px 0 0}
+#authv.gate{background:rgba(40,0,6,.28)}
+.auth h2{font:400 clamp(24px,5vw,30px)/1.1 Bungee,Rubik,sans-serif;color:var(--ink);margin:0 0 8px}
+.auth .sub{color:var(--muted);margin:0 0 16px}
+.pv{margin-top:14px;font-size:14px;color:var(--muted)}
+.pv summary{cursor:pointer;min-height:44px;display:flex;align-items:center;text-decoration:underline;text-underline-offset:3px;list-style:none}
+.pv summary::-webkit-details-marker{display:none}
+.pv p{margin:0 0 4px}
 .auth .link{display:block}
 .auth .btn{margin-top:8px;width:100%}
 .auth a.btn{display:flex;align-items:center;justify-content:center;text-decoration:none}
@@ -269,14 +276,13 @@ button:focus-visible,input:focus-visible{outline:3px solid #2b6cff;outline-offse
 <div class="veil" id="authv" hidden>
   <div class="ticket auth" role="dialog" aria-modal="true" aria-labelledby="auh">
     <div data-step="email">
-      <h2 id="auh">Play on every device</h2>
-      <p>Sign in to save your balance and cash-out history to your account.</p>
-      <button class="btn inkb" id="pkin" type="button">Sign in with a passkey</button>
-      <div class="or" id="pkor">or get a code by email</div>
+      <h2 id="auh">Sign in to play</h2>
+      <p class="sub">Start with $100 in play chips. Your balance and history follow you to any device.</p>
       <form id="ef"><label class="lab" for="aemail">Email</label><input class="inp" id="aemail" type="email" autocomplete="email" inputmode="email" required placeholder="you@example.com"><button class="btn sun" type="submit">Email me a code</button></form>
+      <div class="or" id="pkor">or</div>
+      <button class="btn ghost" id="pkin" type="button">Sign in with a passkey</button>
       <p class="msg" role="status"></p>
-      <p class="priv">We store your email and game history so you can play on any device. The site owner can see both. Play money only.</p>
-      <button class="link" type="button" data-close>Not now</button>
+      <details class="pv"><summary>How your account works</summary><p>Your email is how you sign in. Your balance and cash-out history are saved to your account so they follow you between devices, and the site owner can see them. You can delete your account any time under Account.</p></details>
     </div>
     <div data-step="code" hidden>
       <h2>Check your email</h2>
@@ -474,10 +480,11 @@ function loop(ts){
   const dt=Math.min(.05,Math.max(0,(ts-lastTs)/1000));lastTs=ts;
   const n=G.n,rowT=.115+.55/n;let landed=false;
   autoTick(ts);
+  if(gated&&ts>=demoNext){const d=makeBall(0);d.demo=true;d.stake=0;d.pay=0;d.ev=0;balls.push(d);demoNext=ts+700}
   for(const b of balls){
     if(b.wait>0){b.wait-=dt;continue}
     const T=b.seg===0?.26:b.seg===n?rowT*1.15:rowT;b.u+=dt*b.sp/T;
-    while(b.u>=1&&!b.done){b.u-=1;if(b.seg<n)hit(b.seg,b.R[b.seg]+1);b.seg++;if(b.seg>n){land(b);landed=true}}
+    while(b.u>=1&&!b.done){b.u-=1;if(b.seg<n)hit(b.seg,b.R[b.seg]+1,b.demo);b.seg++;if(b.seg>n){land(b);landed=true}}
     if(b.done)b.u=1;
   }
   balls=balls.filter(b=>!b.done);
@@ -485,16 +492,17 @@ function loop(ts){
   floats.forEach(f=>f.t+=dt);floats=floats.filter(f=>f.t<.9);
   for(let k=0;k<slotT.length;k++)slotT[k]+=dt;
   draw();
-  if(landed){save();ui()}
-  const busy=AUTO.on||balls.length||flashes.length||floats.length||slotT.some(t=>t<.32);
+  if(landed&&!gated){save();ui()}
+  const busy=gated||AUTO.on||balls.length||flashes.length||floats.length||slotT.some(t=>t<.32);
   if(busy)requestAnimationFrame(loop);else{running=false;ui();if(later){const st=later;later=null;adopt(st)}}
 }
-function hit(r,j){
+function hit(r,j,demo){
   flashes.push({r,j,t:0});
-  const now=performance.now();if(ac&&now-lastTick>28){lastTick=now;tone(1900-r*45+rnd()*80,ac.currentTime,.035,.018,'triangle')}
+  const now=performance.now();if(!demo&&ac&&now-lastTick>28){lastTick=now;tone(1900-r*45+rnd()*80,ac.currentTime,.035,.018,'triangle')}
 }
 function land(b){
   b.done=true;slotT[b.k]=0;
+  if(b.demo)return;
   S.pending=r2(S.pending-b.pay);S.balance=r2(S.balance+b.pay);S.dropped++;
   S.best=Math.max(S.best,b.mult);S.hist.unshift(b.mult);S.hist=S.hist.slice(0,14);
   if(b.mult>=2)floats.push({k:b.k,t:0,text:fmtM(b.mult)+'×'});
@@ -714,7 +722,7 @@ document.addEventListener('keydown',e=>{
 });
 
 /* accounts and sync: email code or passkey sign-in, state saved per account on the server */
-let me=null,rev=0,pushT=0,pushing=false,dirty=false,later=null,authEmail='',swa=null,delArm=0;
+let me=null,rev=0,pushT=0,pushing=false,dirty=false,later=null,authEmail='',swa=null,delArm=0,gated=false,canGate=false,demoNext=0;
 const PK=!!(window.PublicKeyCredential&&navigator.credentials);
 async function api(path,o={}){
   try{const r=await fetch(path,{method:o.method||'GET',headers:o.body?{'Content-Type':'application/json'}:undefined,body:o.body?JSON.stringify(o.body):undefined,credentials:'same-origin',keepalive:!!o.keepalive});
@@ -771,13 +779,20 @@ function step(n){
   $('pkin').hidden=$('pkor').hidden=!PK;
   const f=$('authv').querySelector(`[data-step="${n}"] input`)||$('authv').querySelector(`[data-step="${n}"] .btn`);f&&f.focus();
 }
-function closeAuth(){$('authv').hidden=true;$('acct').focus()}
+function closeAuth(){if(gated)return;$('authv').hidden=true;$('acct').focus()}
+/* sign-in gate: shown whenever accounts are available and nobody is signed in; the board plays demo balls behind it */
+function setGate(on){
+  gated=on;$('authv').classList.toggle('gate',on);document.querySelector('.app').inert=on;
+  if(on){step('email');kick()}
+}
 function loadSWA(){
   if(window.SimpleWebAuthnBrowser)return Promise.resolve();
   return swa||(swa=new Promise((ok,no)=>{const s=document.createElement('script');s.src='https://unpkg.com/@simplewebauthn/browser@14.0.0/dist/bundle/index.umd.min.js';s.onload=ok;s.onerror=()=>{swa=null;no()};document.head.appendChild(s)}));
 }
 async function signedIn(user){
-  me=user;acctUI();await syncIn();
+  me=user;acctUI();
+  if(gated){setGate(false);balls=balls.filter(b=>!b.demo)}
+  await syncIn();
   if(PK&&!me.passkeys)step('passkey');else closeAuth();
 }
 function busy(btn,on,label){if(on){btn.dataset.l=btn.textContent;btn.textContent=label;btn.disabled=true}else{btn.textContent=btn.dataset.l||btn.textContent;btn.disabled=false}}
@@ -823,7 +838,7 @@ async function addPasskey(e){
 }
 $('pkadd1').onclick=addPasskey;$('pkadd2').onclick=addPasskey;
 function toGuest(){stopAuto();me=null;rev=0;dirty=false;clearTimeout(pushT);try{localStorage.removeItem('plinko-sync')}catch(e){}
-  balls=[];flashes=[];floats=[];later=null;load({muted:S.muted});saveLocal();geom();draw();ui();acctUI();closeAuth()}
+  balls=[];flashes=[];floats=[];later=null;load({muted:S.muted});saveLocal();geom();draw();ui();acctUI();closeAuth();if(canGate)setGate(true)}
 $('aout').onclick=async()=>{if(dirty){clearTimeout(pushT);await push()}await api('/api/auth?op=logout',{method:'POST',body:{}});toGuest()};
 $('adel').onclick=async e=>{
   if(Date.now()-delArm>4000){delArm=Date.now();e.target.textContent='Tap again to delete your account and history';return}
@@ -836,9 +851,11 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 async function initAccount(){
   if(!/^https?:$/.test(location.protocol))return;
   const r=await api('/api/auth?op=me');
-  if(!r.ok||!('user' in r)||!r.ready||!r.ready.db)return;
-  $('acct').hidden=false;
-  if(r.user){me=r.user;acctUI();await syncIn()}
+  if(!r.ok||!('user' in r)||!r.ready||!r.ready.db){if(gated)setGate(false),$('authv').hidden=true;return}
+  $('acct').hidden=false;canGate=!!r.ready.email;
+  try{localStorage.setItem('plinko-gate',canGate?'1':'0')}catch(e){}
+  if(r.user){me=r.user;acctUI();if(gated){setGate(false);$('authv').hidden=true;balls=balls.filter(b=>!b.demo)}await syncIn()}
+  else if(canGate&&!gated)setGate(true);
 }
 
 function start(data){
@@ -849,6 +866,7 @@ function start(data){
   const ro=new ResizeObserver(()=>layout());ro.observe(fig);
   layout();ui();
   if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>draw());
+  try{if(/^https?:$/.test(location.protocol)&&localStorage.getItem('plinko-gate')==='1'&&!localStorage.getItem('plinko-sync'))setGate(true)}catch(e){}
   initAccount();
 }
 window.claude?.hot?.ready?window.claude.hot.ready(start):start(window.claude?.hot?.data??{});
