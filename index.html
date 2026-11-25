@@ -648,8 +648,8 @@ function drop(count,fromAuto){
 
 /* controls */
 function seg(id,vals,cur,lab,fn,lock){
-  const el=$(id);
-  el.innerHTML=vals.map(v=>`<button type="button" data-v="${v}" aria-pressed="${v===cur}"${lock?' disabled':''}>${lab(v)}</button>`).join('');
+  const el=$(id),h=vals.map(v=>`<button type="button" data-v="${v}" aria-pressed="${v===cur}"${lock?' disabled':''}>${lab(v)}</button>`).join('');
+  if(el._h!==h)el.innerHTML=el._h=h;   // a rebuild in the middle of a push loses the push
   el.onclick=e=>{const t=e.target.closest('button');if(t&&!t.disabled)fn(t.dataset.v)};
 }
 function comb(n,k){let c=1;for(let i=1;i<=k;i++)c=c*(n-k+i)/i;return c}
