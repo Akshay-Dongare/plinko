@@ -96,7 +96,7 @@ export default async function handler(req, res) {
       await kv('DEL', 'chal:auth:' + cid);
       const response = b.response || {};
       const rawCred = typeof response.id === 'string' && response.id.length < 600 ? await kv('GET', 'cred:' + response.id) : null;
-      if (!rawCred) return send(res, 400, { error: "This passkey isn't linked to an account here. Sign in with your email first, then add a passkey." });
+      if (!rawCred) return send(res, 400, { error: "This passkey isn't linked to an account here. Sign up with your email first, then add a passkey." });
       const cred = JSON.parse(rawCred);
       const v = await verifyAuthenticationResponse({
         response, expectedChallenge: challenge, expectedOrigin: s.origin, expectedRPID: s.rpID,

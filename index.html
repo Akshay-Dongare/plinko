@@ -277,9 +277,9 @@ button:focus-visible,input:focus-visible{outline:3px solid #2b6cff;outline-offse
   <div class="ticket auth" role="dialog" aria-modal="true" aria-labelledby="auh">
     <div data-step="email">
       <h2 id="auh">Sign in to play</h2>
-      <p class="sub">Start with $100 in play chips. Your balance and history follow you to any device.</p>
+      <p class="sub">Start with $100 in play chips. New here? Your email is all you need to sign up.</p>
       <form id="ef"><label class="lab" for="aemail">Email</label><input class="inp" id="aemail" type="email" autocomplete="email" inputmode="email" required placeholder="you@example.com"><button class="btn sun" type="submit">Email me a code</button></form>
-      <div class="or" id="pkor">or</div>
+      <div class="or" id="pkor">or, if you've added a passkey</div>
       <button class="btn ghost" id="pkin" type="button">Sign in with a passkey</button>
       <p class="msg" role="status"></p>
       <details class="pv"><summary>How your account works</summary><p>Your email is how you sign in. Your balance and cash-out history are saved to your account so they follow you between devices, and the site owner can see them. You can delete your account any time under Account.</p></details>
@@ -822,7 +822,7 @@ $('pkin').onclick=async e=>{
     const v=await api('/api/auth?op=passkey-login-verify',{method:'POST',body:{response:resp}});
     if(!v.ok)throw new Error(v.error);
     busy(btn,false);await signedIn(v.user);
-  }catch(err){busy(btn,false);amsg(err&&err.name==='NotAllowedError'?'Passkey sign-in was cancelled.':(err&&err.message)||'Passkey sign-in failed.')}
+  }catch(err){busy(btn,false);amsg(err&&err.name==='NotAllowedError'?'No passkey came through. If you\'re new, sign up with your email above first. You can add a passkey right after.':(err&&err.message)||'Passkey sign-in failed.')}
 };
 async function addPasskey(e){
   const btn=e.currentTarget;busy(btn,true,'Waiting for passkey…');
