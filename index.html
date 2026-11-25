@@ -4,7 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Plinko</title>
-<meta name="description" content="Plinko with a $100 buy-in, multi-ball drops and cash out. Play money only.">
+<meta name="description" content="Plinko with play money. Buy in for $100 and cash out when you stop.">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="apple-mobile-web-app-title" content="Plinko">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#a3141f">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%227%22 fill=%22%23d7262d%22/%3E%3Ccircle cx=%2216%22 cy=%2216%22 r=%229%22 fill=%22%23ffc531%22 stroke=%22%237a3f00%22 stroke-width=%222%22/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -153,6 +157,12 @@ button:focus-visible,input:focus-visible{outline:3px solid #2b6cff;outline-offse
 .foot .btn{width:100%}
 .foot .cost{margin:8px 0 0;min-height:1.4em}
 .go{background:#0d8048;color:#fff;box-shadow:inset 0 -4px 0 #075a31}
+#go{position:relative;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+#go.held:not(:disabled){transform:translateY(2px)}
+.kc{position:absolute;right:12px;top:50%;transform:translateY(-50%);font:600 12px/1 Rubik,sans-serif;padding:4px 7px;border-radius:6px;border:1.5px solid currentColor;opacity:.55}
+@media (hover:none){.kc{display:none}}
+.snd.ico{width:44px;padding:0;display:grid;place-items:center}
+.snd .x,.snd.off .w{display:none}.snd.off .x{display:block}
 .stop{background:var(--bad);color:#fff;box-shadow:inset 0 -4px 0 #8e1520}
 .two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
 .sel{width:100%;min-height:44px;border:2px solid var(--line);border-radius:12px;padding:0 34px 0 12px;font:600 16px Rubik,sans-serif;color:var(--ink);background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%231d1a33' stroke-width='2'/%3E%3C/svg%3E") no-repeat right 12px center;appearance:none;-webkit-appearance:none;cursor:pointer}
@@ -184,9 +194,9 @@ button:focus-visible,input:focus-visible{outline:3px solid #2b6cff;outline-offse
       <h1>Plinko</h1>
       <div class="bulbs" id="bulbs" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
       <button class="snd" id="acct" hidden>Sign in</button>
-      <button class="snd" id="snd" aria-pressed="true">Sound on</button>
+      <button class="snd ico" id="snd" type="button" aria-label="Mute" aria-pressed="false" title="Mute"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z" fill="currentColor"/><path class="w" d="M15.5 8.5a5 5 0 0 1 0 7"/><path class="w" d="M18.5 5.5a9 9 0 0 1 0 13"/><path class="x" d="M16 9.5l5 5m0-5-5 5"/></svg></button>
     </div>
-    <div class="fig" id="fig"><canvas id="cv" aria-label="Pegboard with multiplier slots"></canvas><div class="recent" id="recent" aria-label="Recent hits"></div></div>
+    <div class="fig" id="fig"><canvas id="cv" aria-label="Board with pegs and multiplier slots"></canvas><div class="recent" id="recent" aria-label="Last hits"></div></div>
   </section>
 
   <aside class="con">
@@ -211,16 +221,12 @@ button:focus-visible,input:focus-visible{outline:3px solid #2b6cff;outline-offse
       <div class="cbody">
         <div id="pplay" role="tabpanel">
           <div class="row">
-            <label class="lab" for="bet">Bet per ball</label>
+            <label class="lab" for="bet">Bet for each ball</label>
             <div class="bet">
               <div class="field"><span>$</span><input id="bet" type="number" inputmode="decimal" min="0.1" step="0.1" value="1.00"></div>
-              <button class="mini" id="half" aria-label="Halve bet">½</button>
-              <button class="mini" id="dbl" aria-label="Double bet">2×</button>
+              <button class="mini" id="half" aria-label="Divide the bet by 2">½</button>
+              <button class="mini" id="dbl" aria-label="Multiply the bet by 2">2×</button>
             </div>
-          </div>
-          <div class="row" id="pman">
-            <span class="lab" id="cntl">Balls per drop</span>
-            <div class="seg" id="cnt" role="group" aria-labelledby="cntl"></div>
           </div>
           <div id="pauto" hidden>
             <div class="row"><span class="lab" id="acntl">Number of balls</span><div class="seg" id="acnt" role="group" aria-labelledby="acntl"></div></div>
@@ -228,8 +234,8 @@ button:focus-visible,input:focus-visible{outline:3px solid #2b6cff;outline-offse
               <summary><span>Speed and stop rules<small id="advsum"></small></span></summary>
               <span class="lab" id="aspdl">Speed</span>
               <div class="seg" id="aspd" role="group" aria-labelledby="aspdl"></div>
-              <div class="arow"><label class="lab" for="aloss" style="margin:0">Stop if this run is down by</label><div class="field"><span>$</span><input id="aloss" type="number" inputmode="decimal" min="0" step="1" value="25"></div></div>
-              <label class="chk"><input type="checkbox" id="abig" checked>Stop on a 10× or bigger hit</label>
+              <div class="arow"><label class="lab" for="aloss" style="margin:0">Stop when this run loses</label><div class="field"><span>$</span><input id="aloss" type="number" inputmode="decimal" min="0" step="1" value="25"></div></div>
+              <label class="chk"><input type="checkbox" id="abig" checked>Stop after a hit of 10× or more</label>
             </details>
           </div>
           <div class="row two">
@@ -244,23 +250,23 @@ button:focus-visible,input:focus-visible{outline:3px solid #2b6cff;outline-offse
             <div class="stats">
               <div><span class="lab">Bought in</span><b id="bought">$0.00</b></div>
               <div><span class="lab">Balls dropped</span><b id="balls">0</b></div>
-              <div><span class="lab">Wagered</span><b id="wag">$0.00</b></div>
-              <div><span class="lab">Best hit</span><b id="best">None yet</b></div>
+              <div><span class="lab">Total bets</span><b id="wag">$0.00</b></div>
+              <div><span class="lab">Best hit</span><b id="best">None</b></div>
             </div>
           </div>
           <div class="row">
             <span class="lab">Cash-out history</span>
             <div class="hrow">
-              <button class="tile" id="htile" aria-haspopup="dialog"><small>All-time net</small><b id="hnet">$0.00</b><small id="hn">No sessions yet</small></button>
+              <button class="tile" id="htile" aria-haspopup="dialog"><small>Total net</small><b id="hnet">$0.00</b><small id="hn">No sessions</small></button>
               <div class="hsum" id="hsum"></div>
             </div>
           </div>
-          <p class="note">Play money only. Every peg is a fair 50/50 bounce, decided when you drop. The space bar presses the big button.</p>
+          <p class="note">This game uses play money only. At each peg, the ball goes left or right with a 50/50 probability. The game sets the full path when you drop the ball.</p>
           <button class="link danger" id="reset">Reset game</button>
         </div>
       </div>
       <div class="foot">
-        <button class="btn big sun" id="go" type="button">Drop a ball</button>
+        <button class="btn big sun" id="go" type="button" aria-keyshortcuts="Space"><span id="gol">Drop a ball</span><kbd class="kc" aria-hidden="true">Space</kbd></button>
         <p class="cost" id="cost"></p>
       </div>
     </section>
@@ -273,7 +279,7 @@ button:focus-visible,input:focus-visible{outline:3px solid #2b6cff;outline-offse
     <div class="tkamt" id="tkamt">$0.00</div>
     <div class="tkres" id="tkres"></div>
     <div class="tkrows" id="tkrows"></div>
-    <button class="btn sun big" id="again">Buy in again · $100</button>
+    <button class="btn sun big" id="again">Buy in again for $100</button>
     <button class="btn ghost big" id="close">Done</button>
   </div>
 </div>
@@ -286,25 +292,25 @@ button:focus-visible,input:focus-visible{outline:3px solid #2b6cff;outline-offse
         <button type="button" data-m="in" id="m-in">Sign in</button>
       </div>
       <h2 id="auh">Create your account</h2>
-      <p class="sub" id="asub">Start with $100 in play chips. Your balance and history follow you to any device.</p>
+      <p class="sub" id="asub">You start with $100 in play chips. Your balance and history are available on all your devices.</p>
       <div id="minpk" hidden>
         <button class="btn inkb" id="pkin" type="button">Sign in with a passkey</button>
-        <div class="or">or get a code by email</div>
+        <div class="or">or receive a code by email</div>
       </div>
       <form id="ef"><label class="lab" for="aemail">Email</label><input class="inp" id="aemail" type="email" autocomplete="email" inputmode="email" required placeholder="you@example.com"><button class="btn sun" type="submit" id="efb">Create account</button></form>
       <p class="msg" role="status"></p>
-      <details class="pv"><summary>How your account works</summary><p>Your email is how you sign in. Your balance and cash-out history are saved to your account so they follow you between devices, and the site owner can see them. You can delete your account any time under Account.</p></details>
+      <details class="pv"><summary>About your account</summary><p>You use your email to sign in. The game keeps your balance and cash-out history in your account. You can see them on all your devices. The owner of this site can also see them. To delete your account, open Account.</p></details>
     </div>
     <div data-step="code" hidden>
       <h2 id="codeh">Check your email</h2>
-      <p id="codeto">Enter the 6-digit code we sent you. It expires in 10 minutes.</p>
+      <p id="codeto">Type the 6-digit code that we sent to you. You can use the code for 10 minutes.</p>
       <form id="cf"><input class="inp code" id="acode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required aria-label="6-digit code"><button class="btn sun" type="submit">Sign in</button></form>
       <p class="msg" role="status"></p>
       <button class="link" type="button" id="cback">Use a different email</button>
     </div>
     <div data-step="passkey" hidden>
       <h2 id="pkh">Add a passkey?</h2>
-      <p>Next time, sign in with Face ID, Touch ID or your phone instead of an email code.</p>
+      <p>With a passkey, you can sign in with Face ID, Touch ID or your phone. An email code is then not necessary.</p>
       <button class="btn sun" type="button" id="pkadd1">Add a passkey</button>
       <p class="msg" role="status"></p>
       <button class="link" type="button" data-close>Not now</button>
@@ -317,7 +323,7 @@ button:focus-visible,input:focus-visible{outline:3px solid #2b6cff;outline-offse
       <a class="btn ghost" id="adash" href="/admin" hidden>Open the players dashboard</a>
       <button class="btn ghost" type="button" id="aout">Sign out</button>
       <p class="msg" role="status"></p>
-      <p class="priv">On a shared computer, sign out when you're done.</p>
+      <p class="priv">If other persons use this computer, sign out after you play.</p>
       <button class="link danger" type="button" id="adel">Delete my account</button>
       <button class="link" type="button" data-close>Done</button>
     </div>
@@ -327,7 +333,7 @@ button:focus-visible,input:focus-visible{outline:3px solid #2b6cff;outline-offse
 <div class="sqback" id="sqback" hidden></div>
 <div class="sq" id="sq" role="dialog" aria-modal="true" aria-labelledby="sqh" hidden>
   <div class="sqhead">
-    <div><span class="lab" id="sqh">All-time net</span><div class="bal" id="sqnet">$0.00</div></div>
+    <div><span class="lab" id="sqh">Total net</span><div class="bal" id="sqnet">$0.00</div></div>
     <button class="sqx" id="sqx">Close</button>
   </div>
   <div class="sqsum" id="sqsum"></div>
@@ -342,7 +348,7 @@ const TABLES={
   12:{low:[10,3,1.6,1.4,1.1,1,0.5,1,1.1,1.4,1.6,3,10],medium:[33,11,4,2,1.1,0.6,0.3,0.6,1.1,2,4,11,33],high:[170,24,8.1,2,0.7,0.2,0.2,0.2,0.7,2,8.1,24,170]},
   16:{low:[16,9,2,1.4,1.4,1.2,1.1,1,0.5,1,1.1,1.2,1.4,1.4,2,9,16],medium:[110,41,10,5,3,1.5,1,0.5,0.3,0.5,1,1.5,3,5,10,41,110],high:[1000,130,26,9,4,2,0.2,0.2,0.2,0.2,0.2,2,4,9,26,130,1000]}
 };
-const BUYIN=100, KEY='plinko-v1', COUNTS=[1,5,10,25,50], RISKS=['low','medium','high'], ROWS=[8,12,16];
+const BUYIN=100, KEY='plinko-v1', RISKS=['low','medium','high'], ROWS=[8,12,16];
 const $=id=>document.getElementById(id);
 const RTP={};for(const n of ROWS){RTP[n]={};for(const k of RISKS){let c=1,t=0;TABLES[n][k].forEach((m,i)=>{t+=c*m;c=c*(n-i)/(i+1)});RTP[n][k]=t/2**n}}
 const fmt=new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'});
@@ -351,7 +357,10 @@ const signed=v=>(v>0.004?'+':v<-0.004?'−':'')+fmt.format(Math.abs(v));
 const day=v=>v?new Date(v).toLocaleDateString('en-US',{day:'numeric',month:'short',year:'numeric'}):'Earlier';
 const r2=v=>Math.round(v*100)/100;
 const rnd=()=>{const a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]/4294967296};
-const DEF={balance:0,boughtIn:0,buyins:0,pending:0,bet:1,rows:16,risk:'medium',count:1,tab:'manual',mode:'manual',dropped:0,wagered:0,best:0,hist:[],muted:false,exp:0,started:null,log:[],auto:{n:50,fast:false,loss:25,big:true}};
+const TOUCH=matchMedia('(hover: none)').matches;
+let holding=null,holdT=0,ptrDown=false,spaceTaken=false,navKeys=false;
+document.addEventListener('pointerdown',()=>{navKeys=false},true);
+const DEF={balance:0,boughtIn:0,buyins:0,pending:0,bet:1,rows:16,risk:'medium',tab:'manual',mode:'manual',dropped:0,wagered:0,best:0,hist:[],muted:false,exp:0,started:null,log:[],auto:{n:50,fast:false,loss:25,big:true}};
 let S={...DEF,hist:[],log:[]};
 
 function load(d){
@@ -365,7 +374,6 @@ function load(d){
   if(!S.log.length&&+d.sessions>0)S.log=[{legacy:true,n:+d.sessions,in:N(d.lifeIn),out:N(d.lifeOut),net:r2(N(d.lifeOut)-N(d.lifeIn)),wag:0,balls:0,best:0,exp:null,start:null,end:null}];
   S.rows=ROWS.includes(+d.rows)?+d.rows:16;
   S.risk=RISKS.includes(d.risk)?d.risk:'medium';
-  S.count=COUNTS.includes(+d.count)?+d.count:1;
   S.tab=['manual','auto','stats'].includes(d.tab)?d.tab:'manual';S.mode=d.mode==='auto'?'auto':'manual';
   S.muted=d.muted===true;
   const a=d.auto&&typeof d.auto==='object'?d.auto:{};
@@ -537,18 +545,18 @@ function startAuto(){
   audio();Object.assign(AUTO,{on:true,left:S.auto.n||Infinity,done:0,base:netNow(),next:0,msg:''});
   ui();kick();
 }
-function stopAuto(msg){if(!AUTO.on)return;AUTO.on=false;AUTO.msg=msg||`Stopped after ${AUTO.done} ball${AUTO.done===1?'':'s'}.`;ui()}
+function stopAuto(msg){if(!AUTO.on)return;AUTO.on=false;AUTO.msg=msg||`Auto stopped after ${AUTO.done} ball${AUTO.done===1?'':'s'}.`;ui()}
 function autoTick(ts){
   if(!AUTO.on||ts<AUTO.next)return;
-  if(S.bet>S.balance+1e-9){if(!balls.length)stopAuto('Stopped: out of chips for this bet.');return}
+  if(S.bet>S.balance+1e-9){if(!balls.length)stopAuto('Auto stopped. Your balance is less than the bet.');return}
   drop(1,true);AUTO.done++;AUTO.left--;AUTO.next=ts+(S.auto.fast?160:450);
-  if(AUTO.left<=0)stopAuto(`Done: ${AUTO.done} balls.`);
+  if(AUTO.left<=0)stopAuto(`Auto dropped all ${AUTO.done} balls.`);
 }
 function autoCheck(b){
   if(!AUTO.on)return;
   const run=r2(netNow()-AUTO.base);
-  if(S.auto.loss>0&&run<=-S.auto.loss)stopAuto(`Stopped: this run is down ${money(-run)}.`);
-  else if(S.auto.big&&b.mult>=10)stopAuto(`Stopped on a ${fmtM(b.mult)}× hit.`);
+  if(S.auto.loss>0&&run<=-S.auto.loss)stopAuto(`Auto stopped. This run lost ${money(-run)}.`);
+  else if(S.auto.big&&b.mult>=10)stopAuto(`Auto stopped after a ${fmtM(b.mult)}× hit.`);
 }
 function drop(count,fromAuto){
   const cost=r2(S.bet*count);
@@ -577,13 +585,13 @@ function ui(){
   $('bought').textContent=money(S.boughtIn);
   $('balls').textContent=S.dropped.toLocaleString('en-US');
   $('wag').textContent=money(S.wagered);
-  $('best').textContent=S.best?fmtM(S.best)+'\u00d7':'None yet';
+  $('best').textContent=S.best?fmtM(S.best)+'\u00d7':'None';
   const broke=started&&!live&&S.balance<Math.min(S.bet,0.1)+1e-9;
   const buy=$('buy'),cash=$('cash');
   $('acts').className='acts'+(started?'':' solo');
   buy.textContent=started?'Re-buy $100':'Buy in $100';
   buy.className='btn '+(!started||(S.balance<S.bet&&!live)?'sun':'ghost');
-  cash.textContent=AUTO.on?'Cash out (auto is on)':live?'Cash out (balls landing)':'Cash out '+money(S.balance);
+  cash.textContent=AUTO.on?'Cash out (auto is on)':live?'Cash out (balls on the board)':'Cash out '+money(S.balance);
   cash.disabled=!started||live;
   histUI();
   for(const id of ['bet','half','dbl'])$(id).disabled=AUTO.on;
@@ -591,21 +599,21 @@ function ui(){
   // tabs
   for(const b of document.querySelectorAll('.tabs [role=tab]')){const on=b.dataset.t===S.tab;b.setAttribute('aria-selected',String(on));b.tabIndex=on?0:-1}
   $('pplay').hidden=S.tab==='stats';$('pstats').hidden=S.tab!=='stats';
-  $('pman').hidden=S.mode!=='manual';$('pauto').hidden=S.mode!=='auto';
-  seg('cnt',COUNTS,S.count,v=>v,v=>{S.count=+v;save();ui()},AUTO.on);
+  $('pauto').hidden=S.mode!=='auto';
   autoUI();
   $('riskS').value=S.risk;$('rowsS').value=String(S.rows);$('riskS').disabled=$('rowsS').disabled=live;
-  $('rtp').textContent=`Top slot pays ${fmtM(TABLES[S.rows][S.risk][0])}\u00d7. Returns ${rtp(S.rows,S.risk).toFixed(1)}% of bets over time.`+(live?' Locked while balls are in play.':'');
+  $('rtp').textContent=`The top slot pays ${fmtM(TABLES[S.rows][S.risk][0])}\u00d7. Over time, this board pays back ${rtp(S.rows,S.risk).toFixed(1)}% of all bets.`+(live?' You cannot change these settings while balls are on the board.':'');
   // the one big button
-  const g=$('go'),auto=S.mode==='auto';let cost='';
-  if(AUTO.on){g.textContent=`Stop auto (${AUTO.done}${S.auto.n?' of '+S.auto.n:''})`;g.className='btn big stop';g.disabled=false;cost=`This run: ${AUTO.done} ball${AUTO.done===1?'':'s'}, ${signed(netNow()-AUTO.base)} so far.`}
-  else if(auto){g.textContent=S.auto.n?`Start auto: ${S.auto.n} balls`:'Start auto: no limit';g.className='btn big go';g.disabled=!started||S.bet>S.balance+1e-9;cost=AUTO.msg||`${money(S.bet)} a ball, one at a time.`}
-  else{g.textContent=S.count>1?`Drop ${S.count} balls`:'Drop a ball';g.className='btn big sun';g.disabled=!started||S.bet*S.count>S.balance+1e-9;cost=S.count>1?`${S.count} \u00d7 ${money(S.bet)} = ${money(r2(S.bet*S.count))}`:''}
+  const g=$('go'),gl=$('gol'),auto=S.mode==='auto';let cost='';
+  if(AUTO.on){gl.textContent=`Stop auto (${AUTO.done}${S.auto.n?' of '+S.auto.n:''})`;g.className='btn big stop';g.disabled=false;cost=`This run: ${AUTO.done} ball${AUTO.done===1?'':'s'}, net ${signed(netNow()-AUTO.base)}.`}
+  else if(auto){gl.textContent=S.auto.n?`Start auto: ${S.auto.n} balls`:'Start auto: no limit';g.className='btn big go';g.disabled=!started||S.bet>S.balance+1e-9;cost=AUTO.msg||`Each ball costs ${money(S.bet)}.`}
+  else{gl.textContent='Drop a ball';g.className='btn big sun';g.disabled=!started||S.bet>S.balance+1e-9;cost=started?(TOUCH?'Hold the button to drop more balls.':'Hold Space to drop more balls.'):''}
+  g.classList.toggle('held',!!holding);
   $('cost').textContent=cost;
   $('msg').classList.toggle('hint',!started);
-  $('msg').textContent=!started?'Buy in to get $100 in chips.':broke?'Out of chips. Re-buy to keep playing.':g.disabled&&!live?'Your bet is more than your balance.':'';
+  $('msg').textContent=!started?'Buy in to receive $100 in chips.':broke?'You have no chips. Re-buy to play again.':g.disabled&&!live?'Your bet is more than your balance.':'';
   renderRecent();
-  const sd=$('snd');sd.textContent=S.muted?'Sound off':'Sound on';sd.setAttribute('aria-pressed',String(!S.muted));
+  const sd=$('snd');sd.classList.toggle('off',S.muted);sd.setAttribute('aria-pressed',String(S.muted));sd.title=S.muted?'Unmute':'Mute';
 }
 let recentKey='';
 function renderRecent(){
@@ -614,15 +622,25 @@ function renderRecent(){
   const grew=recentKey!==''&&S.dropped>+recentKey.split(':')[0];recentKey=k;
   $('recent').innerHTML=top.map((m,i)=>{const[b,c]=chipCol(m);return`<span class="chip${i===0&&grew?' pop':''}" style="background:${b};color:${c}">${fmtM(m)}\u00d7</span>`}).join('');
 }
-function press(){if(AUTO.on)stopAuto();else if(S.mode==='auto')startAuto();else drop(S.count)}
+function press(){if(AUTO.on)stopAuto();else if(S.mode==='auto')startAuto();else drop(1)}
+/* hold Space or the button: 1 ball now, then 1 ball each HOLD_GAP ms until release */
+const HOLD_WAIT=350,HOLD_GAP=180;
+function holdStart(src){
+  if(holding)return;
+  if(AUTO.on||S.mode!=='manual'){press();return}
+  holding=src;drop(1);$('go').classList.add('held');
+  const rep=()=>{if(!holding)return;drop(1);holdT=setTimeout(rep,HOLD_GAP)};
+  holdT=setTimeout(rep,HOLD_WAIT);
+}
+function holdStop(){if(!holding)return;holding=null;clearTimeout(holdT);$('go').classList.remove('held')}
 function setTab(t){S.tab=t;if(t!=='stats')S.mode=t;save();ui()}
 $('buy').onclick=()=>{audio();if(!S.buyins){S.started=new Date().toISOString();S.exp=0}S.buyins++;S.boughtIn=r2(S.boughtIn+BUYIN);S.balance=r2(S.balance+BUYIN);coinSound();save();ui()};
 function entry(x){return{start:x.started,end:new Date().toISOString(),in:x.boughtIn,out:r2(x.balance+x.pending),net:r2(x.balance+x.pending-x.boughtIn),wag:x.wagered,balls:x.dropped,best:x.best,exp:r2(x.exp),legacy:false,n:1}}
 function autoUI(){
   seg('acnt',[10,50,100,0],S.auto.n,v=>v?v:'No limit',v=>{S.auto.n=+v;save();ui()},AUTO.on);
-  seg('aspd',['steady','fast'],S.auto.fast?'fast':'steady',v=>v==='fast'?'Fast':'Steady',v=>{S.auto.fast=v==='fast';save();ui()},AUTO.on);
+  seg('aspd',['steady','fast'],S.auto.fast?'fast':'steady',v=>v==='fast'?'Fast':'Normal',v=>{S.auto.fast=v==='fast';save();ui()},AUTO.on);
   const al=$('aloss');if(document.activeElement!==al)al.value=S.auto.loss;al.disabled=AUTO.on;$('abig').checked=S.auto.big;$('abig').disabled=AUTO.on;
-  $('advsum').textContent=[S.auto.fast?'Fast':'Steady',S.auto.loss?`stop at \u2212$${S.auto.loss}`:'',S.auto.big?'stop on 10\u00d7':''].filter(Boolean).join(', ');
+  $('advsum').textContent=[S.auto.fast?'Fast':'Normal',S.auto.loss?`stop at \u2212$${S.auto.loss}`:'',S.auto.big?'stop at 10\u00d7':''].filter(Boolean).join(', ');
 }
 function totals(){
   const L=S.log,real=L.filter(x=>!x.legacy);
@@ -631,17 +649,17 @@ function totals(){
   return{n,net,wag,back,exp,real,rnet};
 }
 function sumLines(t){
-  if(!t.n)return['<p>Cash out to log a session. Every one you finish lands here.</p>'];
+  if(!t.n)return['<p>Cash out to record a session. All your sessions show here.</p>'];
   const out=[];
-  if(t.wag>0)out.push(`<p>Paid back <b>${(t.back/t.wag*100).toFixed(1)}%</b> of <b>${money(t.wag)}</b> wagered.</p>`,`<p>The math expected <b>${signed(t.exp)}</b>. You got <b>${signed(t.rnet)}</b>.</p>`);
-  if(t.n>t.real.length)out.push('<p>Sessions from before history was added count in the net only.</p>');
+  if(t.wag>0)out.push(`<p>The board paid back <b>${(t.back/t.wag*100).toFixed(1)}%</b> of <b>${money(t.wag)}</b> in bets.</p>`,`<p>Expected result: <b>${signed(t.exp)}</b>. Your result: <b>${signed(t.rnet)}</b>.</p>`);
+  if(t.n>t.real.length)out.push('<p>Sessions from before this history are in the net only.</p>');
   return out;
 }
 function histUI(){
   const t=totals(),hn=$('hnet');
   hn.textContent=signed(t.net);hn.className=t.net>0.004?'up':t.net<-0.004?'down':'';
   hn.style.fontSize=hn.textContent.length>8?'17px':'22px';
-  $('hn').textContent=t.n?`${t.n} session${t.n>1?'s':''}`:'No sessions yet';
+  $('hn').textContent=t.n?`${t.n} session${t.n>1?'s':''}`:'No sessions';
   $('hsum').innerHTML=sumLines(t).join('');
   if(!$('sq').hidden)renderSq();
 }
@@ -652,7 +670,7 @@ function renderSq(){
   $('sqsum').innerHTML=sumLines(t).join('');
   seg('sqv',['tiles','pie'],sqView,v=>v==='tiles'?'Sessions':'Pie',v=>{sqView=v;renderSq()},false);
   const L=S.log.map((x,i)=>({...x,i:i+1})).reverse(),body=$('sqbody');
-  if(!L.length){body.innerHTML='<p class="empty">No cash-outs yet. Play a session and cash out.</p>';return}
+  if(!L.length){body.innerHTML='<p class="empty">There are no cash-outs. Play a session. Then cash out.</p>';return}
   if(sqView==='tiles'){
     body.innerHTML='<div class="grid">'+L.map(x=>{const c=x.net>0.004?'up':x.net<-0.004?'down':'';
       return x.legacy?`<div class="st ${c}"><span>Earlier</span><b>${signed(x.net)}</b><span>${x.n} session${x.n>1?'s':''}</span></div>`
@@ -695,10 +713,10 @@ function cashOut(){
   Object.assign(S,{balance:0,boughtIn:0,buyins:0,pending:0,dropped:0,wagered:0,best:0,hist:[],exp:0,started:null});
   save();ui();if(me)push();
   $('tkamt').textContent=money(t.out);
-  const r=$('tkres');r.textContent=t.net>0?`You're up ${money(t.net)}`:t.net<0?`You're down ${money(-t.net)}`:'You broke even';
+  const r=$('tkres');r.textContent=t.net>0?`You won ${money(t.net)}.`:t.net<0?`You lost ${money(-t.net)}.`:'You did not win or lose money.';
   r.className='tkres '+(t.net>0?'up':t.net<0?'down':'');
   const when=new Date().toLocaleString('en-US',{day:'numeric',month:'short',year:'numeric',hour:'numeric',minute:'2-digit'});
-  const rows=[['Bought in',money(t.inn)],['Cashed out',money(t.out)],['Wagered',money(t.wag)],['Balls dropped',t.balls.toLocaleString('en-US')],['Best hit',t.best?fmtM(t.best)+'×':'None'],['The math expected',signed(t.exp)],['Time',when]];
+  const rows=[['Bought in',money(t.inn)],['Cashed out',money(t.out)],['Total bets',money(t.wag)],['Balls dropped',t.balls.toLocaleString('en-US')],['Best hit',t.best?fmtM(t.best)+'×':'None'],['Expected result',signed(t.exp)],['Time',when]];
   $('tkrows').innerHTML=rows.map(([a,b])=>`<div><span>${a}</span><b>${b}</b></div>`).join('');
   $('veil').hidden=false;$('again').focus();
   cashSound(t.net>0);
@@ -709,7 +727,12 @@ $('cash').onclick=cashOut;
 $('close').onclick=closeTicket;
 $('again').onclick=()=>{closeTicket();$('buy').click()};
 $('veil').onclick=e=>{if(e.target.id==='veil')closeTicket()};
-$('go').onclick=press;
+$('go').addEventListener('pointerdown',e=>{ptrDown=false;if(e.button!==0||$('go').disabled||AUTO.on||S.mode!=='manual')return;ptrDown=true;holdStart('ptr')});
+$('go').onclick=e=>{if(e.detail>0&&ptrDown){ptrDown=false;return}press()};
+$('go').addEventListener('contextmenu',e=>e.preventDefault());
+for(const ev of ['pointerup','pointercancel'])addEventListener(ev,()=>{if(holding==='ptr')holdStop()});
+addEventListener('blur',holdStop);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)holdStop()});
 for(const b of document.querySelectorAll('.tabs [role=tab]'))b.onclick=()=>setTab(b.dataset.t);
 document.querySelector('.tabs').onkeydown=e=>{if(e.key!=='ArrowRight'&&e.key!=='ArrowLeft')return;const T=['manual','auto','stats'],i=(T.indexOf(S.tab)+(e.key==='ArrowRight'?1:2))%3;setTab(T[i]);$('tab-'+T[i]).focus()};
 $('riskS').onchange=e=>{S.risk=e.target.value;save();draw();ui()};
@@ -722,16 +745,22 @@ $('half').onclick=()=>setBet(S.bet/2);
 $('dbl').onclick=()=>setBet(S.buyins&&S.balance>=0.1?Math.min(S.bet*2,S.balance):S.bet*2);
 $('snd').onclick=()=>{S.muted=!S.muted;if(!S.muted)audio();save();ui()};
 $('reset').onclick=e=>{
-  if(Date.now()-resetArm>3000){resetArm=Date.now();e.target.textContent='Tap again to reset everything';setTimeout(()=>{e.target.textContent='Reset game'},3000);return}
+  if(Date.now()-resetArm>3000){resetArm=Date.now();e.target.textContent='Push again to reset the game';setTimeout(()=>{e.target.textContent='Reset game'},3000);return}
   stopAuto();const m=S.muted;balls=[];flashes=[];floats=[];load({muted:m});resetArm=0;e.target.textContent='Reset game';save();geom();draw();ui();
 };
 document.addEventListener('keydown',e=>{
   if(!$('authv').hidden){if(e.key==='Escape')closeAuth();return}
   if(!$('sq').hidden){if(e.key==='Escape')closeSq();return}
   if(!$('veil').hidden){if(e.key==='Escape')closeTicket();return}
-  const t=document.activeElement&&document.activeElement.tagName;
-  if(e.code==='Space'&&t!=='INPUT'&&t!=='BUTTON'&&t!=='SELECT'&&t!=='SUMMARY'){e.preventDefault();press()}
+  if(e.key==='Tab'||e.key.startsWith('Arrow'))navKeys=true;
+  if(e.code!=='Space')return;
+  const a=document.activeElement,t=a?a.tagName:'';
+  if((t==='INPUT'&&!/^(checkbox|radio)$/.test(a.type))||t==='SELECT'||t==='TEXTAREA')return;
+  /* a keyboard user on another control keeps the normal Space action; after a mouse or touch, Space drops */
+  if(navKeys&&a&&a!==$('go')&&a!==document.body)return;
+  e.preventDefault();if(!e.repeat){spaceTaken=true;holdStart('key')}
 });
+document.addEventListener('keyup',e=>{if(e.code==='Space'&&spaceTaken){spaceTaken=false;e.preventDefault();if(holding==='key')holdStop()}});
 
 /* accounts and sync: email code or passkey sign-in, state saved per account on the server */
 let me=null,rev=0,pushT=0,pushing=false,dirty=false,later=null,authEmail='',swa=null,delArm=0,gated=false,canGate=false,demoNext=0;
@@ -742,13 +771,13 @@ function setMode(m){
   amode=m;amsg('');
   for(const b of document.querySelectorAll('#amodes button')){const on=b.dataset.m===m;b.setAttribute('aria-pressed',String(on))}
   $('auh').textContent=m==='up'?'Create your account':'Welcome back';
-  $('asub').textContent=m==='up'?'Start with $100 in play chips. Your balance and history follow you to any device.':(PK?'Use your passkey, or get a code by email.':'Get a sign-in code by email.');
-  $('minpk').hidden=m!=='in'||!PK;$('efb').textContent=m==='up'?'Create account':'Email me a code';
+  $('asub').textContent=m==='up'?'You start with $100 in play chips. Your balance and history are available on all your devices.':(PK?'Use your passkey, or receive a code by email.':'We send a sign-in code to your email.');
+  $('minpk').hidden=m!=='in'||!PK;$('efb').textContent=m==='up'?'Create account':'Send a code';
 }
 async function api(path,o={}){
   try{const r=await fetch(path,{method:o.method||'GET',headers:o.body?{'Content-Type':'application/json'}:undefined,body:o.body?JSON.stringify(o.body):undefined,credentials:'same-origin',keepalive:!!o.keepalive});
     let j={};try{j=await r.json()}catch(e){}return{...j,ok:r.ok,status:r.status}}
-  catch(e){return{ok:false,status:0,error:'No connection. Check your internet and try again.'}}
+  catch(e){return{ok:false,status:0,error:'There is no connection. Check your internet connection. Then do the step again.'}}
 }
 function meta(o){try{localStorage.setItem('plinko-sync',JSON.stringify(o))}catch(e){}}
 function getMeta(){try{return JSON.parse(localStorage.getItem('plinko-sync')||'{}')||{}}catch(e){return{}}}
@@ -768,7 +797,7 @@ async function push(keep){
 function adopt(st){if(balls.length){later=st;return}load(st);saveLocal();geom();draw();ui()}
 const idle=()=>new Promise(res=>{const c=()=>balls.length?setTimeout(c,200):res();c()});
 async function syncIn(){
-  stopAuto('Paused to load your account.');
+  stopAuto('Auto stopped while your account loads.');
   await idle();
   const r=await api('/api/state');if(!r.ok||!me)return;
   const m=getMeta();rev=r.rev||0;
@@ -794,7 +823,7 @@ function step(n){
   $('authv').hidden=false;
   if(n==='acct'){
     $('aem').textContent=me.email;
-    $('ainfo').textContent=(me.passkeys?`${me.passkeys} passkey${me.passkeys>1?'s':''} on this account. `:'No passkeys yet. ')+'Your game saves to your account as you play.';
+    $('ainfo').textContent=(me.passkeys?`This account has ${me.passkeys} passkey${me.passkeys>1?'s':''}. `:'This account has no passkeys. ')+'The game saves your balance and history to your account while you play.';
     $('pkadd2').hidden=!PK;$('adash').hidden=!me.admin;$('adel').textContent='Delete my account';delArm=0;
   }
   if(n==='email')setMode(knownHere()?'in':'up');
@@ -812,7 +841,7 @@ function loadSWA(){
 }
 async function signedIn(user,created){
   me=user;acctUI();try{localStorage.setItem('plinko-known','1')}catch(e){}
-  $('pkh').textContent=created?'Account created. Add a passkey?':'Add a passkey?';
+  $('pkh').textContent=created?'Your account is ready. Add a passkey?':'Add a passkey?';
   if(gated){setGate(false);balls=balls.filter(b=>!b.demo)}
   await syncIn();
   if(PK&&!me.passkeys)step('passkey');else closeAuth();
@@ -824,19 +853,19 @@ for(const b of document.querySelectorAll('#authv [data-close]'))b.onclick=closeA
 $('authv').onclick=e=>{if(e.target.id==='authv')closeAuth()};
 $('ef').onsubmit=async e=>{
   e.preventDefault();const btn=e.target.querySelector('.btn');authEmail=$('aemail').value.trim().toLowerCase();
-  busy(btn,true,'Sending…');const r=await api('/api/auth?op=email-start',{method:'POST',body:{email:authEmail}});busy(btn,false);
-  if(!r.ok){amsg(r.error||'Could not send the code.');return}
-  step('code');$('codeh').textContent=amode==='up'?'Confirm your email':'Check your email';$('codeto').textContent=`Enter the 6-digit code we sent to ${authEmail}. It expires in 10 minutes.`;$('acode').value='';
+  busy(btn,true,'Wait…');const r=await api('/api/auth?op=email-start',{method:'POST',body:{email:authEmail}});busy(btn,false);
+  if(!r.ok){amsg(r.error||'We could not send the code.');return}
+  step('code');$('codeh').textContent=amode==='up'?'Confirm your email':'Check your email';$('codeto').textContent=`Type the 6-digit code that we sent to ${authEmail}. You can use the code for 10 minutes.`;$('acode').value='';
 };
 $('cf').onsubmit=async e=>{
   e.preventDefault();const btn=e.target.querySelector('.btn');
-  busy(btn,true,'Checking…');const r=await api('/api/auth?op=email-verify',{method:'POST',body:{email:authEmail,code:$('acode').value}});busy(btn,false);
-  if(!r.ok){amsg(r.error||'Could not sign in.');return}
+  busy(btn,true,'Wait…');const r=await api('/api/auth?op=email-verify',{method:'POST',body:{email:authEmail,code:$('acode').value}});busy(btn,false);
+  if(!r.ok){amsg(r.error||'Sign-in failed.');return}
   await signedIn(r.user,r.created);
 };
 $('cback').onclick=()=>step('email');
 $('pkin').onclick=async e=>{
-  const btn=e.currentTarget;busy(btn,true,'Waiting for passkey…');
+  const btn=e.currentTarget;busy(btn,true,'Use your passkey now');
   try{
     await loadSWA();
     const o=await api('/api/auth?op=passkey-login-options',{method:'POST',body:{}});
@@ -845,10 +874,10 @@ $('pkin').onclick=async e=>{
     const v=await api('/api/auth?op=passkey-login-verify',{method:'POST',body:{response:resp}});
     if(!v.ok)throw new Error(v.error);
     busy(btn,false);await signedIn(v.user);
-  }catch(err){busy(btn,false);amsg(err&&err.name==='NotAllowedError'?'No passkey came through. New here? Tap Sign up and use your email. You can add a passkey right after.':(err&&err.message)||'Passkey sign-in failed.')}
+  }catch(err){busy(btn,false);amsg(err&&err.name==='NotAllowedError'?'The game did not receive a passkey. If you do not have an account, push Sign up and use your email. You can add a passkey after that.':(err&&err.message)||'Passkey sign-in failed.')}
 };
 async function addPasskey(e){
-  const btn=e.currentTarget;busy(btn,true,'Waiting for passkey…');
+  const btn=e.currentTarget;busy(btn,true,'Use your passkey now');
   try{
     await loadSWA();
     const o=await api('/api/auth?op=passkey-reg-options',{method:'POST',body:{}});
@@ -856,17 +885,17 @@ async function addPasskey(e){
     const resp=await SimpleWebAuthnBrowser.startRegistration({optionsJSON:o.options});
     const v=await api('/api/auth?op=passkey-reg-verify',{method:'POST',body:{response:resp}});
     if(!v.ok)throw new Error(v.error);
-    me=v.user;busy(btn,false);step('acct');amsg('Passkey added. Next time, sign in with it.',true);
-  }catch(err){busy(btn,false);amsg(err&&err.name==='InvalidStateError'?'This device already has a passkey for your account.':err&&err.name==='NotAllowedError'?'Adding the passkey was cancelled.':(err&&err.message)||'Could not add the passkey.')}
+    me=v.user;busy(btn,false);step('acct');amsg('The passkey is added. Use it to sign in next time.',true);
+  }catch(err){busy(btn,false);amsg(err&&err.name==='InvalidStateError'?'This device already has a passkey for your account.':err&&err.name==='NotAllowedError'?'The passkey was not added.':(err&&err.message)||'The passkey was not added. Do the step again.')}
 }
 $('pkadd1').onclick=addPasskey;$('pkadd2').onclick=addPasskey;
 function toGuest(){stopAuto();me=null;rev=0;dirty=false;clearTimeout(pushT);try{localStorage.removeItem('plinko-sync')}catch(e){}
   balls=[];flashes=[];floats=[];later=null;load({muted:S.muted});saveLocal();geom();draw();ui();acctUI();closeAuth();if(canGate)setGate(true)}
 $('aout').onclick=async()=>{if(dirty){clearTimeout(pushT);await push()}await api('/api/auth?op=logout',{method:'POST',body:{}});toGuest()};
 $('adel').onclick=async e=>{
-  if(Date.now()-delArm>4000){delArm=Date.now();e.target.textContent='Tap again to delete your account and history';return}
+  if(Date.now()-delArm>4000){delArm=Date.now();e.target.textContent='Push again to delete your account and history';return}
   const r=await api('/api/auth?op=delete-account',{method:'POST',body:{}});
-  if(!r.ok){amsg(r.error||'Could not delete the account.');return}
+  if(!r.ok){amsg(r.error||'The account was not deleted.');return}
   toGuest();
 };
 addEventListener('pagehide',()=>{if(me&&dirty){clearTimeout(pushT);push(true)}});

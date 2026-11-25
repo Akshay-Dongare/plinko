@@ -5,7 +5,7 @@ const n = v => (Number.isFinite(+v) ? +v : 0);
 const t = v => (typeof v === 'string' && !isNaN(Date.parse(v)) ? v : null);
 
 export default async function handler(req, res) {
-  if (!kvReady()) return send(res, 503, { error: 'Accounts are not set up yet.' });
+  if (!kvReady()) return send(res, 503, { error: 'Accounts are not available at this time.' });
   try {
     const user = await currentUser(req);
     if (!user) return send(res, 401, { error: 'Sign in first.' });
@@ -31,6 +31,6 @@ export default async function handler(req, res) {
     return send(res, 200, { players });
   } catch (e) {
     console.error('admin', e);
-    return send(res, 500, { error: 'Something went wrong on the server. Try again.' });
+    return send(res, 500, { error: 'The server had an error. Do the step again.' });
   }
 }

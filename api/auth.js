@@ -40,7 +40,7 @@ async function findOrCreateUser(email) {
 
 export default async function handler(req, res) {
   const op = String((req.query && req.query.op) || new URL(req.url, 'http://x').searchParams.get('op') || '');
-  if (!kvReady()) return send(res, op === 'me' ? 200 : 503, { user: null, ready: { db: false, email: mailReady() }, error: 'Accounts are not set up yet.' });
+  if (!kvReady()) return send(res, op === 'me' ? 200 : 503, { user: null, ready: { db: false, email: mailReady() }, error: 'Accounts are not available at this time.' });
 
   try {
     if (op === 'me') {
@@ -53,10 +53,10 @@ export default async function handler(req, res) {
 
     if (op === 'email-start') {
       const email = String(b.email || '').trim().toLowerCase();
-      if (!EMAIL_RE.test(email)) return send(res, 400, { error: 'That email address looks wrong.' });
-      if (!mailReady()) return send(res, 503, { error: 'Email sign-in is still being set up. Try again later.' });
+      if (!EMAIL_RE.test(email)) return send(res, 400, { error: 'The email address is not correct.' });
+      if (!mailReady()) return send(res, 503, { error: 'Email sign-in is not available at this time.' });
       if (!(await limit('rl:e:' + sha(email), 5, 3600)) || !(await limit('rl:ip:' + sha(clientIp(req)), 30, 3600)))
-        return send(res, 429, { error: 'Too many codes asked for. Wait an hour and try again.' });
+        return send(res, 429, { error: 'You asked for too many codes. Wait 1 hour. Then ask for a new code.' });
       const code = String(crypto.randomInt(0, 1000000)).padStart(6, '0');
       await kv('SET', 'code:' + email, JSON.stringify({ h: sha(email + ':' + code), tries: 0 }), 'EX', CODE_TTL);
       await sendCode(email, code);
@@ -67,14 +67,14 @@ export default async function handler(req, res) {
       const email = String(b.email || '').trim().toLowerCase();
       const code = String(b.code || '').replace(/\D/g, '');
       const raw = EMAIL_RE.test(email) ? await kv('GET', 'code:' + email) : null;
-      if (!raw) return send(res, 400, { error: 'That code has expired. Ask for a new one.' });
+      if (!raw) return send(res, 400, { error: 'The code is not valid now. Ask for a new code.' });
       const rec = JSON.parse(raw);
-      if (rec.tries >= 5) { await kv('DEL', 'code:' + email); return send(res, 429, { error: 'Too many wrong tries. Ask for a new code.' }); }
+      if (rec.tries >= 5) { await kv('DEL', 'code:' + email); return send(res, 429, { error: 'You typed too many wrong codes. Ask for a new code.' }); }
       const good = code.length === 6 && crypto.timingSafeEqual(Buffer.from(rec.h), Buffer.from(sha(email + ':' + code)));
       if (!good) {
         rec.tries++;
         await kv('SET', 'code:' + email, JSON.stringify(rec), 'KEEPTTL');
-        return send(res, 400, { error: `Wrong code. ${5 - rec.tries} tries left.` });
+        return send(res, 400, { error: `The code is not correct. You can type the code ${5 - rec.tries} more time${5 - rec.tries === 1 ? '' : 's'}.` });
       }
       await kv('DEL', 'code:' + email);
       const user = await findOrCreateUser(email);
@@ -92,21 +92,21 @@ export default async function handler(req, res) {
     if (op === 'passkey-login-verify') {
       const cid = getCookies(req).pkc;
       const challenge = cid ? await kv('GET', 'chal:auth:' + cid) : null;
-      if (!challenge) return send(res, 400, { error: 'Sign-in timed out. Try again.' });
+      if (!challenge) return send(res, 400, { error: 'The time limit for sign-in ended. Sign in again.' });
       await kv('DEL', 'chal:auth:' + cid);
       const response = b.response || {};
       const rawCred = typeof response.id === 'string' && response.id.length < 600 ? await kv('GET', 'cred:' + response.id) : null;
-      if (!rawCred) return send(res, 400, { error: "This passkey isn't linked to an account here. Tap Sign up and use your email first, then add a passkey." });
+      if (!rawCred) return send(res, 400, { error: 'This passkey is not linked to an account here. Push Sign up and use your email. Then add a passkey.' });
       const cred = JSON.parse(rawCred);
       const v = await verifyAuthenticationResponse({
         response, expectedChallenge: challenge, expectedOrigin: s.origin, expectedRPID: s.rpID,
         credential: { id: response.id, publicKey: Buffer.from(cred.pk, 'base64url'), counter: cred.counter, transports: cred.transports }
       });
-      if (!v.verified) return send(res, 400, { error: "Passkey didn't verify. Try again." });
+      if (!v.verified) return send(res, 400, { error: 'We could not verify the passkey. Use it again.' });
       cred.counter = v.authenticationInfo.newCounter;
       await kv('SET', 'cred:' + response.id, JSON.stringify(cred));
       const raw = await kv('GET', 'user:' + cred.uid);
-      if (!raw) return send(res, 400, { error: 'That account no longer exists.' });
+      if (!raw) return send(res, 400, { error: 'This account does not exist now.' });
       const user = JSON.parse(raw);
       const cookies = await startSession(res, req, user, [cookie('pkc', '', 0, s.secure)]);
       return send(res, 200, { user: await publicUser(user) }, cookies);
@@ -129,12 +129,12 @@ export default async function handler(req, res) {
 
     if (op === 'passkey-reg-verify') {
       const challenge = await kv('GET', 'chal:reg:' + user.id);
-      if (!challenge) return send(res, 400, { error: 'Timed out. Try adding the passkey again.' });
+      if (!challenge) return send(res, 400, { error: 'The time limit ended. Add the passkey again.' });
       await kv('DEL', 'chal:reg:' + user.id);
       const v = await verifyRegistrationResponse({
         response: b.response || {}, expectedChallenge: challenge, expectedOrigin: s.origin, expectedRPID: s.rpID
       });
-      if (!v.verified) return send(res, 400, { error: "Passkey didn't verify. Try again." });
+      if (!v.verified) return send(res, 400, { error: 'We could not verify the passkey. Use it again.' });
       const c = v.registrationInfo.credential;
       await pipe([
         ['SET', 'cred:' + c.id, JSON.stringify({ uid: user.id, pk: Buffer.from(c.publicKey).toString('base64url'), counter: c.counter, transports: c.transports || [], created: new Date().toISOString() })],
@@ -161,6 +161,6 @@ export default async function handler(req, res) {
     return send(res, 404, { error: 'Unknown action.' });
   } catch (e) {
     console.error('auth', op, e);
-    return send(res, 500, { error: 'Something went wrong on the server. Try again.' });
+    return send(res, 500, { error: 'The server had an error. Do the step again.' });
   }
 }

@@ -67,7 +67,7 @@ button:focus-visible,a:focus-visible{outline:3px solid #2b6cff;outline-offset:2p
 <body>
 <main>
   <header><h1>Plinko players</h1><a href="/">Back to the game</a></header>
-  <section class="panel" id="root"><p class="msg">Loading players…</p></section>
+  <section class="panel" id="root"><p class="msg">Wait while the players load.</p></section>
 </main>
 <div class="sqback" id="sqback" hidden></div>
 <div class="sq" id="sq" role="dialog" aria-modal="true" aria-labelledby="sqh" hidden>
@@ -98,11 +98,11 @@ function render(){
   const balls=all.reduce((a,s)=>a+s.balls,0),now=Date.now();
   const joined=P.filter(p=>p.created&&now-Date.parse(p.created)<7*864e5).length,active=P.filter(p=>p.lastSeen&&now-Date.parse(p.lastSeen)<864e5).length;
   $('root').innerHTML=`<div class="lead">
-    <button class="tile" id="ptile" aria-haspopup="dialog"><small>Players</small><b>${P.length}</b><small>Tap to see each one</small></button>
+    <button class="tile" id="ptile" aria-haspopup="dialog"><small>Players</small><b>${P.length}</b><small>Push to see each player</small></button>
     <div class="sum">
-      <p>All players' cash-outs: <b class="${cls(net)}">${signed(net)}</b>${net<-0.004?' (the house is up)':''}</p>
-      <p>Paid back <b>${wag?(back/wag*100).toFixed(1)+'%':'n/a'}</b> of <b>${money(wag)}</b> wagered. The board's long-run rate is about 99%.</p>
-      <p><b>${balls.toLocaleString('en-US')}</b> balls dropped. <b>${joined}</b> joined in the last 7 days, <b>${active}</b> played in the last 24 hours.</p>
+      <p>All players' cash-outs: <b class="${cls(net)}">${signed(net)}</b>${net<-0.004?' (the house won)':''}</p>
+      <p>The board paid back <b>${wag?(back/wag*100).toFixed(1)+'%':'n/a'}</b> of <b>${money(wag)}</b> in bets. Over time, the board pays back approximately 99%.</p>
+      <p><b>${balls.toLocaleString('en-US')}</b> balls dropped. <b>${joined}</b> joined in the last 7 days. <b>${active}</b> played in the last 24 hours.</p>
     </div></div>`;
   $('ptile').onclick=openSq;
 }
@@ -127,8 +127,8 @@ function body(){
     $('back').onclick=()=>{open=null;body()};
     return;
   }
-  $('sqh').textContent=`${P.length} player${P.length===1?'':'s'}`;$('sqh').className='';$('sqsub').textContent='Net across each player\'s cash-outs, most recent first';
-  if(!P.length){B.innerHTML='<p class="msg">Nobody has signed up yet.</p>';return}
+  $('sqh').textContent=`${P.length} player${P.length===1?'':'s'}`;$('sqh').className='';$('sqsub').textContent='The net of the cash-outs of each player. The newest are first.';
+  if(!P.length){B.innerHTML='<p class="msg">No players have signed up.</p>';return}
   if(view==='tiles'){
     B.innerHTML='<div class="grid">'+P.map((p,i)=>{const s=stats(p);return`<button class="st ${cls(s.net)}" data-i="${i}" type="button"><span class="em" title="${esc(p.email)}">${esc(p.email)}</span><b>${signed(s.net)}</b><span>${s.sessions} session${s.sessions===1?'':'s'} · ${esc(day(p.lastSeen))}</span></button>`}).join('')+'</div>';
     B.onclick=e=>{const b=e.target.closest('button.st');if(b){open=+b.dataset.i;body()}};
@@ -137,7 +137,7 @@ function body(){
   B.onclick=null;
   const c={up:0,down:0,even:0,none:0};
   for(const p of P){const s=stats(p);c[!s.sessions?'none':s.net>0.004?'up':s.net<-0.004?'down':'even']++}
-  const parts=[['up','Up overall','#0d8048'],['down','Down overall','#c41d2a'],['even','Even','#b9b2a6'],['none','No cash-outs yet','#e4dccf']].filter(x=>c[x[0]]),tot=P.length;
+  const parts=[['up','Up overall','#0d8048'],['down','Down overall','#c41d2a'],['even','Even','#b9b2a6'],['none','No cash-outs','#e4dccf']].filter(x=>c[x[0]]),tot=P.length;
   let a=-Math.PI/2,svg='';
   for(const[k,,col]of parts){const f=c[k]/tot;
     if(f>=1){svg+=`<circle cx="100" cy="100" r="90" fill="${col}"/>`;continue}
@@ -165,9 +165,9 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('sq').hidden)clo
 (async()=>{
   try{
     const r=await fetch('/api/admin',{credentials:'same-origin'});let j={};try{j=await r.json()}catch(e){}
-    if(!r.ok){$('root').innerHTML=`<p class="msg">${esc(j.error||'Could not load players.')}</p><p><a href="/">Go to the game and sign in</a></p>`;return}
+    if(!r.ok){$('root').innerHTML=`<p class="msg">${esc(j.error||'The players did not load.')}</p><p><a href="/">Go to the game and sign in</a></p>`;return}
     P=Array.isArray(j.players)?j.players:[];render();
-  }catch(e){$('root').innerHTML='<p class="msg">No connection. Check your internet and reload.</p>'}
+  }catch(e){$('root').innerHTML='<p class="msg">There is no connection. Check your internet connection. Then reload the page.</p>'}
 })();
 }
 </script>

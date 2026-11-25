@@ -1,0 +1,14 @@
+{
+  "name": "Plinko",
+  "short_name": "Plinko",
+  "description": "Plinko with play money. Buy in for $100 and cash out when you stop.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#d7262d",
+  "theme_color": "#a3141f",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

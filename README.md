@@ -1,6 +1,6 @@
 # Plinko
 
-Play-money Plinko with a $100 buy-in, multi-ball drops, cash-outs and a full cash-out history.
+Play-money Plinko with a $100 buy-in, hold-to-drop (Space or the button), auto mode, cash-outs and a full cash-out history. All game text uses ASD-STE100 Simplified Technical English.
 Live at https://plinko.akshaydongare.com
 
 ## What's here
