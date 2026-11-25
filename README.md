@@ -13,8 +13,18 @@ Live at https://plinko.akshaydongare.com
 | `api/state.js` | Loads and saves each player's game (balance, settings, cash-out history). |
 | `api/admin.js` | Every player's email, dates and history for the dashboard. |
 | `lib/` | Redis over REST, cookies and sessions, email sending. |
+| `dev/serve.mjs` | Local dev server with an in-memory database and fake email. |
 
 No build step: Vercel serves the HTML files as they are and runs `api/` as functions.
+
+## Run it locally
+
+```
+npm ci
+node dev/serve.mjs
+```
+
+This serves the full app at http://localhost:3000 with an in-memory database and fake email, so it needs no secrets. Sign-in codes print in the terminal. Any email works, and `akshay@akshaydongare.com` is the admin. Data is lost when the server stops.
 
 ## Environment variables (set in Vercel)
 
