@@ -8,6 +8,7 @@ Live at https://plinko.akshaydongare.com
 | Path | What it does |
 |---|---|
 | `index.html` | The game. On the live site you must sign in, and your game is saved to your account. |
+| `og.png` | The picture that chat apps show with a link to the game. The `og:` tags in `index.html` point to it on the live site. |
 | `admin.html` | Players dashboard at `/admin`, only for the emails in `ADMIN_EMAILS`. |
 | `api/auth.js` | Sign-in: 6-digit email codes, passkeys, sign out, delete account. |
 | `api/state.js` | Loads and saves each player's game (balance, settings, cash-out history). |
