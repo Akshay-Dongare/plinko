@@ -76,7 +76,10 @@ button:focus-visible,input:focus-visible{outline:3px solid #2b6cff;outline-offse
 .chip{font:700 13px Rubik,sans-serif;padding:5px 9px;border-radius:999px;white-space:nowrap}
 .empty{font-size:14px;color:var(--muted)}
 .note{font-size:13px;color:var(--muted);margin:12px 0 0}
-.link{background:none;border:0;color:var(--ink);font:600 14px Rubik,sans-serif;text-decoration:underline;cursor:pointer;min-height:44px;padding:0}
+.link{background:none;border:0;color:var(--ink);font:700 15px Rubik,sans-serif;text-decoration:none;cursor:pointer;min-height:44px;padding:0 10px;margin-left:-10px;border-radius:10px}
+.link:hover{background:var(--soft)}
+.link:focus-visible{outline:3px solid var(--ink);outline-offset:1px}
+.link.danger:hover{background:#fbe8e9}
 .acts{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
 .acts .btn{min-height:52px;width:100%;white-space:normal;line-height:1.15;padding:6px 10px;overflow-wrap:anywhere}
 .acts.solo #buy{grid-column:1/-1}
@@ -145,6 +148,12 @@ button:focus-visible,input:focus-visible{outline:3px solid #2b6cff;outline-offse
 .pv summary::-webkit-details-marker{display:none}
 .pv p{margin:0 0 4px}
 .auth .link{display:block}
+.auth{position:relative}
+.auth h2{padding-right:44px}
+.xbtn{position:absolute;top:12px;right:12px;width:44px;height:44px;border:0;border-radius:50%;background:var(--soft);color:var(--ink);display:grid;place-items:center;cursor:pointer}
+.xbtn:hover{background:var(--line)}
+.xbtn:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+#authv.gate .xbtn{display:none}
 .auth .link[hidden]{display:none}
 .link.danger{color:var(--bad)}
 .auth .btn{margin-top:8px;width:100%}
@@ -290,6 +299,7 @@ button:focus-visible,input:focus-visible{outline:3px solid #2b6cff;outline-offse
 
 <div class="veil" id="authv" hidden>
   <div class="ticket auth" role="dialog" aria-modal="true" aria-labelledby="auh">
+    <button class="xbtn" type="button" data-close aria-label="Close" title="Close"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
     <div data-step="email">
       <div class="seg modes" id="amodes" role="group" aria-label="Sign up or sign in">
         <button type="button" data-m="up" id="m-up">Sign up</button>
@@ -329,7 +339,6 @@ button:focus-visible,input:focus-visible{outline:3px solid #2b6cff;outline-offse
       <p class="priv">If other persons use this computer, sign out after you play.</p>
       <button class="link" type="button" id="pkadd3">Add a passkey for a different device</button>
       <button class="link danger" type="button" id="adel">Delete my account</button>
-      <button class="link" type="button" data-close>Done</button>
     </div>
   </div>
 </div>
