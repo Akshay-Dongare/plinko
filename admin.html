@@ -47,7 +47,7 @@ header a{color:#fff;font-weight:600;min-height:44px;display:inline-flex;align-it
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
 .st{aspect-ratio:1;border:0;border-radius:12px;padding:10px;display:flex;flex-direction:column;justify-content:space-between;font:13px/1.35 Rubik,sans-serif;background:var(--soft);color:var(--ink);text-align:left}
 button.st{cursor:pointer}
-.st .em{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.st .who{min-width:0}.st .nm,.st .em{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.st .nm{font-weight:700;font-size:15px}.st .em{font-size:12px;opacity:.75}
 .st b{font-size:18px;white-space:nowrap}
 .st.up{background:#e1f3e8;color:#0a5c33}.st.down{background:#fde4e6;color:#9e1520}
 .facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px 14px;margin:0 0 12px}
@@ -115,7 +115,7 @@ function body(){
   seg();const B=$('sqbody');
   if(open!==null){
     const p=P[open],s=stats(p);
-    $('sqh').textContent=signed(s.net);$('sqh').className=cls(s.net);$('sqsub').textContent=p.email;
+    $('sqh').textContent=signed(s.net);$('sqh').className=cls(s.net);$('sqsub').textContent=p.name?`${p.name} · ${p.email}`:p.email;
     const log=p.log.map((x,i)=>({...x,i:i+1})).reverse();
     B.innerHTML=`<button class="btn" id="back" type="button">All players</button>
       <div class="facts" style="margin-top:12px">
@@ -130,7 +130,7 @@ function body(){
   $('sqh').textContent=`${P.length} player${P.length===1?'':'s'}`;$('sqh').className='';$('sqsub').textContent='The net of the cash-outs of each player. The newest are first.';
   if(!P.length){B.innerHTML='<p class="msg">No players have signed up.</p>';return}
   if(view==='tiles'){
-    B.innerHTML='<div class="grid">'+P.map((p,i)=>{const s=stats(p);return`<button class="st ${cls(s.net)}" data-i="${i}" type="button"><span class="em" title="${esc(p.email)}">${esc(p.email)}</span><b>${signed(s.net)}</b><span>${s.sessions} session${s.sessions===1?'':'s'} · ${esc(day(p.lastSeen))}</span></button>`}).join('')+'</div>';
+    B.innerHTML='<div class="grid">'+P.map((p,i)=>{const s=stats(p);return`<button class="st ${cls(s.net)}" data-i="${i}" type="button"><span class="who" title="${esc(p.email)}"><span class="nm">${esc(p.name||'No name')}</span><span class="em">${esc(p.email)}</span></span><b>${signed(s.net)}</b><span>${s.sessions} session${s.sessions===1?'':'s'} · ${esc(day(p.lastSeen))}</span></button>`}).join('')+'</div>';
     B.onclick=e=>{const b=e.target.closest('button.st');if(b){open=+b.dataset.i;body()}};
     return;
   }

@@ -144,10 +144,16 @@ button:focus-visible,input:focus-visible{outline:3px solid #2b6cff;outline-offse
 .modes{margin-bottom:16px}
 #minpk .btn{margin-top:0}
 .pv{margin-top:14px;font-size:14px;color:var(--muted)}
-.pv summary{cursor:pointer;min-height:44px;display:flex;align-items:center;text-decoration:underline;text-underline-offset:3px;list-style:none}
+.pv summary{cursor:pointer;min-height:44px;display:inline-flex;align-items:center;gap:6px;font-weight:600;color:var(--ink);list-style:none;padding:0 10px;margin-left:-10px;border-radius:10px}
+.pv summary:hover{background:var(--soft)}
+.pv summary::after{content:'';width:7px;height:7px;border:solid currentColor;border-width:0 2px 2px 0;transform:rotate(45deg) translateY(-2px)}
+.pv[open] summary::after{transform:rotate(-135deg) translateY(-2px)}
 .pv summary::-webkit-details-marker{display:none}
 .pv p{margin:0 0 4px}
 .auth .link{display:block}
+.who b{display:block;font-size:18px}.who span{display:block;color:var(--muted);font-size:14px;overflow-wrap:anywhere}
+#nmrow[hidden]{display:none}
+#authv.must .xbtn{display:none}
 .auth{position:relative}
 .auth h2{padding-right:44px}
 .xbtn{position:absolute;top:12px;right:12px;width:44px;height:44px;border:0;border-radius:50%;background:var(--soft);color:var(--ink);display:grid;place-items:center;cursor:pointer}
@@ -310,9 +316,15 @@ button:focus-visible,input:focus-visible{outline:3px solid #2b6cff;outline-offse
         <button class="btn inkb" id="pkin" type="button">Sign in with a passkey</button>
         <div class="or">or receive a code by email</div>
       </div>
-      <form id="ef"><label class="lab" for="aemail">Email</label><input class="inp" id="aemail" type="email" autocomplete="email" inputmode="email" required placeholder="you@example.com"><button class="btn sun" type="submit" id="efb">Create account</button></form>
+      <form id="ef"><div id="nmrow"><label class="lab" for="aname">First name or nickname</label><input class="inp" id="aname" type="text" autocomplete="nickname" maxlength="30" spellcheck="false"></div><label class="lab" for="aemail">Email</label><input class="inp" id="aemail" type="email" autocomplete="email" inputmode="email" required placeholder="you@example.com"><button class="btn sun" type="submit" id="efb">Create account</button></form>
       <p class="msg" role="status"></p>
-      <details class="pv"><summary>About your account</summary><p>You use your email to sign in. The game keeps your balance and cash-out history in your account. You can see them on all your devices. The owner of this site can also see them. To delete your account, open Account.</p></details>
+      <details class="pv"><summary>About your account</summary><p>You use your email to sign in. The game keeps your name, balance and cash-out history in your account. You can see them on all your devices. The owner of this site can also see them. To delete your account, open Account.</p></details>
+    </div>
+    <div data-step="name" hidden>
+      <h2 id="nmh">What is your name?</h2>
+      <p>Type your first name or a nickname. Only the owner of this site can see it.</p>
+      <form id="nf"><label class="lab" for="nname">First name or nickname</label><input class="inp" id="nname" type="text" autocomplete="nickname" maxlength="30" spellcheck="false" required><button class="btn sun" type="submit">Save</button></form>
+      <p class="msg" role="status"></p>
     </div>
     <div data-step="code" hidden>
       <h2 id="codeh">Check your email</h2>
@@ -330,12 +342,13 @@ button:focus-visible,input:focus-visible{outline:3px solid #2b6cff;outline-offse
     </div>
     <div data-step="acct" hidden>
       <h2>Your account</h2>
-      <p><b id="aem"></b></p>
+      <p class="who"><b id="anm"></b><span id="aem"></span></p>
       <p id="ainfo"></p>
       <button class="btn sun" type="button" id="pkadd2">Add a passkey</button>
       <button class="btn ghost" type="button" id="aout">Sign out</button>
       <p class="msg" role="status"></p>
       <p class="priv">If other persons use this computer, sign out after you play.</p>
+      <button class="link" type="button" id="aname2">Change your name</button>
       <button class="link" type="button" id="pkadd3">Add a passkey for a different device</button>
       <button class="link danger" type="button" id="adel">Delete my account</button>
     </div>
@@ -772,13 +785,14 @@ document.addEventListener('keyup',e=>{if(e.code==='Space'&&spaceTaken){spaceTake
 /* accounts and sync: email code or passkey sign-in, state saved per account on the server */
 let me=null,rev=0,pushT=0,pushing=false,dirty=false,later=null,authEmail='',swa=null,delArm=0,gated=false,canGate=false,demoNext=0;
 const PK=!!(window.PublicKeyCredential&&navigator.credentials);
-let amode='up';
+let amode='up',authName='',needName=false,afterName=null;
 function knownHere(){try{return localStorage.getItem('plinko-known')==='1'}catch(e){return false}}
 function setMode(m){
   amode=m;amsg('');
   for(const b of document.querySelectorAll('#amodes button')){const on=b.dataset.m===m;b.setAttribute('aria-pressed',String(on))}
   $('auh').textContent=m==='up'?'Create your account':'Welcome back';
   $('asub').textContent=m==='up'?'You start with $100 in play chips. Your balance and history are available on all your devices.':(PK?'Use your passkey, or receive a code by email.':'We send a sign-in code to your email.');
+  $('nmrow').hidden=m!=='up';$('aname').required=m==='up';
   $('minpk').hidden=m!=='in'||!PK;$('efb').textContent=m==='up'?'Create account':'Send a code';
 }
 async function api(path,o={}){
@@ -829,14 +843,14 @@ function step(n){
   for(const el of document.querySelectorAll('#authv [data-step]'))el.hidden=el.dataset.step!==n;
   $('authv').hidden=false;
   if(n==='acct'){
-    $('aem').textContent=me.email;
+    $('anm').textContent=me.name||'No name';$('aem').textContent=me.email;
     $('ainfo').textContent=(me.passkeys?`This account has ${me.passkeys} passkey${me.passkeys>1?'s':''}. `:'This account has no passkeys. ')+'The game saves your balance and history to your account while you play.';
     $('pkadd2').hidden=!PK||me.passkeys>0;$('pkadd3').hidden=!PK||!me.passkeys;$('adel').textContent='Delete my account';delArm=0;
   }
   if(n==='email')setMode(knownHere()?'in':'up');
   const f=$('authv').querySelector(`[data-step="${n}"] input`)||$('authv').querySelector(`[data-step="${n}"] .btn`);f&&f.focus();
 }
-function closeAuth(){if(gated)return;$('authv').hidden=true;$('acct').focus()}
+function closeAuth(){if(gated||needName)return;$('authv').hidden=true;$('acct').focus()}
 /* sign-in gate: shown whenever accounts are available and nobody is signed in; the board plays demo balls behind it */
 function setGate(on){
   gated=on;$('authv').classList.toggle('gate',on);document.querySelector('.app').inert=on;
@@ -851,22 +865,34 @@ async function signedIn(user,created){
   $('pkh').textContent=created?'Your account is ready. Add a passkey?':'Add a passkey?';
   if(gated){setGate(false);balls=balls.filter(b=>!b.demo)}
   await syncIn();
-  if(PK&&!me.passkeys)step('passkey');else closeAuth();
+  const next=()=>{if(PK&&!me.passkeys)step('passkey');else closeAuth()};
+  if(!me.name)askName(next);else next();
 }
+function askName(then){needName=true;afterName=then||null;$('authv').classList.add('must');$('nmh').textContent='What is your name?';$('nname').value='';step('name')}
+$('nf').onsubmit=async e=>{
+  e.preventDefault();const btn=e.target.querySelector('.btn'),v=$('nname').value.trim();
+  if(!v){amsg('Type your first name or a nickname.');return}
+  busy(btn,true,'Wait…');const r=await api('/api/auth?op=set-name',{method:'POST',body:{name:v}});busy(btn,false);
+  if(!r.ok){amsg(r.error||'The name was not saved.');return}
+  me=r.user;const was=needName,then=afterName;needName=false;afterName=null;$('authv').classList.remove('must');
+  if(was){if(then)then();else closeAuth()}else{step('acct');amsg('Your name is saved.',true)}
+};
+$('aname2').onclick=()=>{$('nmh').textContent='Change your name';$('nname').value=me&&me.name||'';step('name')};
 function busy(btn,on,label){if(on){btn.dataset.l=btn.textContent;btn.textContent=label;btn.disabled=true}else{btn.textContent=btn.dataset.l||btn.textContent;btn.disabled=false}}
 $('acct').onclick=()=>me?step('acct'):step('email');
 for(const b of document.querySelectorAll('#amodes button'))b.onclick=()=>setMode(b.dataset.m);
 for(const b of document.querySelectorAll('#authv [data-close]'))b.onclick=closeAuth;
 $('authv').onclick=e=>{if(e.target.id==='authv')closeAuth()};
 $('ef').onsubmit=async e=>{
-  e.preventDefault();const btn=e.target.querySelector('.btn');authEmail=$('aemail').value.trim().toLowerCase();
+  e.preventDefault();const btn=e.target.querySelector('.btn');authEmail=$('aemail').value.trim().toLowerCase();authName=amode==='up'?$('aname').value.trim():'';
+  if(amode==='up'&&!authName){amsg('Type your first name or a nickname.');$('aname').focus();return}
   busy(btn,true,'Wait…');const r=await api('/api/auth?op=email-start',{method:'POST',body:{email:authEmail}});busy(btn,false);
   if(!r.ok){amsg(r.error||'We could not send the code.');return}
   step('code');$('codeh').textContent=amode==='up'?'Confirm your email':'Check your email';$('codeto').textContent=`Type the 6-digit code that we sent to ${authEmail}. You can use the code for 10 minutes.`;$('acode').value='';
 };
 $('cf').onsubmit=async e=>{
   e.preventDefault();const btn=e.target.querySelector('.btn');
-  busy(btn,true,'Wait…');const r=await api('/api/auth?op=email-verify',{method:'POST',body:{email:authEmail,code:$('acode').value}});busy(btn,false);
+  busy(btn,true,'Wait…');const r=await api('/api/auth?op=email-verify',{method:'POST',body:{email:authEmail,code:$('acode').value,name:authName}});busy(btn,false);
   if(!r.ok){amsg(r.error||'Sign-in failed.');return}
   await signedIn(r.user,r.created);
 };
@@ -896,7 +922,7 @@ async function addPasskey(e){
   }catch(err){busy(btn,false);amsg(err&&err.name==='InvalidStateError'?'This device already has a passkey for your account.':err&&err.name==='NotAllowedError'?'The passkey was not added.':(err&&err.message)||'The passkey was not added. Do the step again.')}
 }
 $('pkadd1').onclick=addPasskey;$('pkadd2').onclick=addPasskey;$('pkadd3').onclick=addPasskey;
-function toGuest(){stopAuto();me=null;rev=0;dirty=false;clearTimeout(pushT);try{localStorage.removeItem('plinko-sync')}catch(e){}
+function toGuest(){stopAuto();me=null;needName=false;afterName=null;$('authv').classList.remove('must');rev=0;dirty=false;clearTimeout(pushT);try{localStorage.removeItem('plinko-sync')}catch(e){}
   balls=[];flashes=[];floats=[];later=null;load({muted:S.muted});saveLocal();geom();draw();ui();acctUI();closeAuth();if(canGate)setGate(true)}
 $('aout').onclick=async()=>{if(dirty){clearTimeout(pushT);await push()}await api('/api/auth?op=logout',{method:'POST',body:{}});toGuest()};
 $('adel').onclick=async e=>{
@@ -913,7 +939,7 @@ async function initAccount(){
   if(!r.ok||!('user' in r)||!r.ready||!r.ready.db){if(gated)setGate(false),$('authv').hidden=true;return}
   $('acct').hidden=false;canGate=!!r.ready.email;
   try{localStorage.setItem('plinko-gate',canGate?'1':'0')}catch(e){}
-  if(r.user){me=r.user;acctUI();if(gated){setGate(false);$('authv').hidden=true;balls=balls.filter(b=>!b.demo)}await syncIn()}
+  if(r.user){me=r.user;acctUI();if(gated){setGate(false);$('authv').hidden=true;balls=balls.filter(b=>!b.demo)}await syncIn();if(!me.name)askName()}
   else if(canGate&&!gated)setGate(true);
 }
 
