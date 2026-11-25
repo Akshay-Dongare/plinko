@@ -33,7 +33,7 @@ h1{font:400 clamp(30px,3.6vw,44px)/1.05 Bungee,Rubik,sans-serif;margin:0;letter-
 .snd{background:rgba(255,255,255,.15);color:#fff;border:0;border-radius:999px;padding:0 16px;min-height:44px;font:600 14px Rubik,sans-serif;cursor:pointer;white-space:nowrap}
 .fig{position:relative;background:linear-gradient(#ffffff,#f5efe6);border-radius:18px;box-shadow:inset 0 0 0 3px #efe5d6,inset 0 8px 18px rgba(0,0,0,.06);overflow:hidden;min-height:300px}
 .fig canvas{position:absolute;inset:0;width:100%;height:100%}
-.con{display:flex;flex-direction:column;gap:12px;overflow-y:auto}
+.con{display:flex;flex-direction:column;gap:12px;min-height:0}
 .panel{background:#fff;border-radius:18px;padding:14px 16px;box-shadow:0 6px 0 rgba(80,0,8,.22)}
 h2{font:700 16px/1.2 Rubik,sans-serif;margin:0 0 10px}
 .wallet{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:12px}
@@ -56,7 +56,6 @@ button:focus-visible,input:focus-visible{outline:3px solid #2b6cff;outline-offse
 .field span{color:var(--muted);font-weight:700}
 .field input{border:0;outline:0;font:700 16px Rubik,sans-serif;width:100%;min-height:44px;background:transparent;color:var(--ink)}
 .mini{min-height:44px;border-radius:12px;border:2px solid var(--line);background:#fff;font:700 16px Rubik,sans-serif;color:var(--ink);cursor:pointer}
-.drops{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;margin-top:12px}
 .seg{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:4px;background:var(--soft);border-radius:12px;padding:4px}
 .seg button{min-height:44px;border:0;border-radius:9px;background:transparent;font:600 15px Rubik,sans-serif;color:var(--ink);cursor:pointer}
 .seg button[aria-pressed=true]{background:var(--ink);color:#fff}
@@ -66,7 +65,6 @@ button:focus-visible,input:focus-visible{outline:3px solid #2b6cff;outline-offse
 .msg{color:var(--bad);font-weight:600}
 .stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 14px}
 .stats b{font-size:18px;white-space:nowrap;font-variant-numeric:tabular-nums}
-.chips{display:flex;flex-wrap:wrap;gap:6px;min-height:30px;align-items:center}
 .chip{font:700 13px Rubik,sans-serif;padding:5px 9px;border-radius:999px;white-space:nowrap}
 .empty{font-size:14px;color:var(--muted)}
 .note{font-size:13px;color:var(--muted);margin:12px 0 0}
@@ -121,9 +119,6 @@ button:focus-visible,input:focus-visible{outline:3px solid #2b6cff;outline-offse
 .arow .field{width:120px;flex:none}
 .chk{display:flex;align-items:center;gap:10px;min-height:44px;font-size:15px;cursor:pointer}
 .chk input{width:20px;height:20px;accent-color:var(--ink);flex:none}
-#abtn{width:100%;margin-top:12px}
-.autob{background:#0d8048;color:#fff;box-shadow:inset 0 -4px 0 #075a31}
-.autob.on{background:var(--bad);box-shadow:inset 0 -4px 0 #8e1520}
 .auth form{margin:0}
 .auth p{margin:0 0 12px}
 .auth .inp{width:100%;min-height:50px;border:2px solid var(--line);border-radius:12px;padding:0 14px;font:600 16px Rubik,sans-serif;color:var(--ink);background:#fff;margin-bottom:8px}
@@ -136,9 +131,38 @@ button:focus-visible,input:focus-visible{outline:3px solid #2b6cff;outline-offse
 .auth .btn{margin-top:8px;width:100%}
 .auth a.btn{display:flex;align-items:center;justify-content:center;text-decoration:none}
 @media(max-width:420px){.pie{grid-template-columns:minmax(0,1fr)}.pie svg{max-width:200px}}
-@media(max-width:900px){html,body{height:auto}.app{grid-template-columns:minmax(0,1fr);height:auto}.fig{height:clamp(300px,92vw,64svh)}.con{overflow:visible}}
+/* sidebar: wallet on top, one tabbed control card whose action button stays pinned */
+.ctl{flex:1;min-height:0;display:flex;flex-direction:column;padding:0;overflow:hidden}
+.tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;background:var(--soft);border-radius:12px;padding:4px;margin:14px 16px 2px}
+.tabs button{min-height:44px;border:0;border-radius:9px;background:transparent;font:600 15px Rubik,sans-serif;color:var(--ink);cursor:pointer}
+.tabs button[aria-selected=true]{background:var(--ink);color:#fff}
+.cbody{flex:1;min-height:0;overflow-y:auto;padding:0 16px 14px}
+.foot{flex:none;padding:12px 16px 14px;border-top:1px solid var(--line);background:#fff}
+.foot .btn{width:100%}
+.foot .cost{margin:8px 0 0;min-height:1.4em}
+.go{background:#0d8048;color:#fff;box-shadow:inset 0 -4px 0 #075a31}
+.stop{background:var(--bad);color:#fff;box-shadow:inset 0 -4px 0 #8e1520}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
+.sel{width:100%;min-height:44px;border:2px solid var(--line);border-radius:12px;padding:0 34px 0 12px;font:600 16px Rubik,sans-serif;color:var(--ink);background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%231d1a33' stroke-width='2'/%3E%3C/svg%3E") no-repeat right 12px center;appearance:none;-webkit-appearance:none;cursor:pointer}
+.sel:focus-visible{outline:3px solid #2b6cff;outline-offset:2px}
+.sel:disabled{opacity:.5;cursor:not-allowed}
+.adv{margin-top:12px;border:2px solid var(--line);border-radius:12px;padding:0 12px}
+.adv summary{min-height:44px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;font-weight:600;list-style:none}
+.adv summary::-webkit-details-marker{display:none}
+.adv summary::after{content:"";width:8px;height:8px;border-right:2px solid var(--ink);border-bottom:2px solid var(--ink);transform:translateY(-2px) rotate(45deg);transition:transform .15s}
+.adv[open] summary::after{transform:translateY(2px) rotate(-135deg)}
+.adv[open]{padding-bottom:12px}
+.adv summary span{display:flex;flex-direction:column;padding:8px 0}
+.adv summary small{font-weight:400;color:var(--muted);font-size:13px}
+.adv[open] summary small{display:none}
+.adv summary+.lab{margin-top:4px}
+.recent{position:absolute;top:12px;right:12px;display:flex;flex-direction:column;gap:6px;pointer-events:none}
+.recent .chip{min-width:54px;text-align:center;box-shadow:0 2px 0 rgba(0,0,0,.12)}
+.recent .chip.pop{animation:pop2 .25s ease-out}
+@keyframes pop2{from{transform:translateY(-8px) scale(.7);opacity:0}}
+@media(max-width:900px){html,body{height:auto}.app{grid-template-columns:minmax(0,1fr);height:auto}.fig{height:clamp(300px,92vw,64svh)}.con{overflow:visible}.ctl,.cbody{overflow:visible}.foot{position:sticky;bottom:0;border-radius:0 0 18px 18px;box-shadow:0 -8px 16px rgba(40,0,6,.12);z-index:2}.recent .chip:nth-child(n+5){display:none}}
 @media(max-width:480px){.bulbs{display:none}.top{justify-content:space-between}.bulbs+#acct{margin-left:auto}.cab{padding:8px 10px 10px;border-radius:20px}}
-@media(prefers-reduced-motion:reduce){.bulbs.flash i{animation:none}.sq{transition:none}.ticket{animation:none}}
+@media(prefers-reduced-motion:reduce){.recent .chip.pop{animation:none}.bulbs.flash i{animation:none}.sq{transition:none}.ticket{animation:none}}
 </style>
 </head>
 <body>
@@ -150,11 +174,11 @@ button:focus-visible,input:focus-visible{outline:3px solid #2b6cff;outline-offse
       <button class="snd" id="acct" hidden>Sign in</button>
       <button class="snd" id="snd" aria-pressed="true">Sound on</button>
     </div>
-    <div class="fig" id="fig"><canvas id="cv" aria-label="Pegboard with multiplier slots"></canvas></div>
+    <div class="fig" id="fig"><canvas id="cv" aria-label="Pegboard with multiplier slots"></canvas><div class="recent" id="recent" aria-label="Recent hits"></div></div>
   </section>
 
   <aside class="con">
-    <section class="panel" aria-label="Wallet and drops">
+    <section class="panel" aria-label="Wallet">
       <div class="wallet">
         <div><span class="lab">Balance</span><div class="bal" id="bal">$0.00</div></div>
         <div><span class="lab" style="text-align:right">Net</span><div class="netv" id="net">$0.00</div></div>
@@ -163,67 +187,69 @@ button:focus-visible,input:focus-visible{outline:3px solid #2b6cff;outline-offse
         <button class="btn sun" id="buy">Buy in $100</button>
         <button class="btn cash" id="cash">Cash out</button>
       </div>
-      <div class="row">
-        <label class="lab" for="bet">Bet per ball</label>
-        <div class="bet">
-          <div class="field"><span>$</span><input id="bet" type="number" inputmode="decimal" min="0.1" step="0.1" value="1.00"></div>
-          <button class="mini" id="half" aria-label="Halve bet">½</button>
-          <button class="mini" id="dbl" aria-label="Double bet">2×</button>
-        </div>
-      </div>
-      <div class="drops">
-        <button class="btn sun" id="d1">Drop 1 ball</button>
-        <button class="btn inkb" id="dn">Drop 10 balls</button>
-      </div>
-      <div class="row">
-        <span class="lab" id="cntl">Balls per multi-drop</span>
-        <div class="seg" id="cnt" role="group" aria-labelledby="cntl"></div>
-      </div>
-      <p class="cost" id="cost"></p>
       <p class="msg" id="msg" role="status"></p>
     </section>
 
-    <section class="panel" aria-label="Auto drop">
-      <h2>Auto</h2>
-      <span class="lab" id="acntl">Balls</span>
-      <div class="seg" id="acnt" role="group" aria-labelledby="acntl"></div>
-      <div class="row"><span class="lab" id="aspdl">Speed</span><div class="seg" id="aspd" role="group" aria-labelledby="aspdl"></div></div>
-      <div class="arow"><label class="lab" for="aloss" style="margin:0">Stop if this run is down by</label><div class="field"><span>$</span><input id="aloss" type="number" inputmode="decimal" min="0" step="1" value="25"></div></div>
-      <label class="chk"><input type="checkbox" id="abig" checked>Stop on a 10× or bigger hit</label>
-      <button class="btn autob" id="abtn" type="button">Start auto</button>
-      <p class="cost" id="astat">Drops one ball at a time with your current bet. Space bar stops it.</p>
-    </section>
-
-    <section class="panel" aria-label="Board settings">
-      <h2>Board</h2>
-      <span class="lab" id="riskl">Risk</span>
-      <div class="seg" id="risk" role="group" aria-labelledby="riskl"></div>
-      <div class="row">
-        <span class="lab" id="rowsl">Rows</span>
-        <div class="seg" id="rows" role="group" aria-labelledby="rowsl"></div>
+    <section class="panel ctl" aria-label="Controls">
+      <div class="tabs" role="tablist" aria-label="Play mode">
+        <button role="tab" type="button" id="tab-manual" data-t="manual" aria-controls="pplay">Manual</button>
+        <button role="tab" type="button" id="tab-auto" data-t="auto" aria-controls="pplay">Auto</button>
+        <button role="tab" type="button" id="tab-stats" data-t="stats" aria-controls="pstats">Stats</button>
       </div>
-      <p class="note" id="rtp"></p>
-    </section>
-
-    <section class="panel" aria-label="Session">
-      <h2>Session</h2>
-      <div class="stats">
-        <div><span class="lab">Bought in</span><b id="bought">$0.00</b></div>
-        <div><span class="lab">Balls dropped</span><b id="balls">0</b></div>
-        <div><span class="lab">Wagered</span><b id="wag">$0.00</b></div>
-        <div><span class="lab">Best hit</span><b id="best">None yet</b></div>
+      <div class="cbody">
+        <div id="pplay" role="tabpanel">
+          <div class="row">
+            <label class="lab" for="bet">Bet per ball</label>
+            <div class="bet">
+              <div class="field"><span>$</span><input id="bet" type="number" inputmode="decimal" min="0.1" step="0.1" value="1.00"></div>
+              <button class="mini" id="half" aria-label="Halve bet">½</button>
+              <button class="mini" id="dbl" aria-label="Double bet">2×</button>
+            </div>
+          </div>
+          <div class="row" id="pman">
+            <span class="lab" id="cntl">Balls per drop</span>
+            <div class="seg" id="cnt" role="group" aria-labelledby="cntl"></div>
+          </div>
+          <div id="pauto" hidden>
+            <div class="row"><span class="lab" id="acntl">Number of balls</span><div class="seg" id="acnt" role="group" aria-labelledby="acntl"></div></div>
+            <details class="adv" id="adv">
+              <summary><span>Speed and stop rules<small id="advsum"></small></span></summary>
+              <span class="lab" id="aspdl">Speed</span>
+              <div class="seg" id="aspd" role="group" aria-labelledby="aspdl"></div>
+              <div class="arow"><label class="lab" for="aloss" style="margin:0">Stop if this run is down by</label><div class="field"><span>$</span><input id="aloss" type="number" inputmode="decimal" min="0" step="1" value="25"></div></div>
+              <label class="chk"><input type="checkbox" id="abig" checked>Stop on a 10× or bigger hit</label>
+            </details>
+          </div>
+          <div class="row two">
+            <label><span class="lab">Risk</span><select class="sel" id="riskS"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></label>
+            <label><span class="lab">Rows</span><select class="sel" id="rowsS"><option value="8">8</option><option value="12">12</option><option value="16">16</option></select></label>
+          </div>
+          <p class="note" id="rtp"></p>
+        </div>
+        <div id="pstats" role="tabpanel" hidden>
+          <div class="row">
+            <span class="lab">This session</span>
+            <div class="stats">
+              <div><span class="lab">Bought in</span><b id="bought">$0.00</b></div>
+              <div><span class="lab">Balls dropped</span><b id="balls">0</b></div>
+              <div><span class="lab">Wagered</span><b id="wag">$0.00</b></div>
+              <div><span class="lab">Best hit</span><b id="best">None yet</b></div>
+            </div>
+          </div>
+          <div class="row">
+            <span class="lab">Cash-out history</span>
+            <div class="hrow">
+              <button class="tile" id="htile" aria-haspopup="dialog"><small>All-time net</small><b id="hnet">$0.00</b><small id="hn">No sessions yet</small></button>
+              <div class="hsum" id="hsum"></div>
+            </div>
+          </div>
+          <p class="note">Play money only. Every peg is a fair 50/50 bounce, decided when you drop. The space bar presses the big button.</p>
+          <button class="link" id="reset">Reset game</button>
+        </div>
       </div>
-      <span class="lab" style="margin-top:12px">Last 14 hits</span>
-      <div class="chips" id="hist"></div>
-      <p class="note">Play money only. Every peg is a fair 50/50 bounce, decided when you drop. Space bar drops one ball.</p>
-      <button class="link" id="reset">Reset game</button>
-    </section>
-
-    <section class="panel" aria-label="Cash-out history">
-      <h2>Cash-out history</h2>
-      <div class="hrow">
-        <button class="tile" id="htile" aria-haspopup="dialog"><small>All-time net</small><b id="hnet">$0.00</b><small id="hn">No sessions yet</small></button>
-        <div class="hsum" id="hsum"></div>
+      <div class="foot">
+        <button class="btn big sun" id="go" type="button">Drop a ball</button>
+        <p class="cost" id="cost"></p>
       </div>
     </section>
   </aside>
@@ -299,7 +325,7 @@ const TABLES={
   12:{low:[10,3,1.6,1.4,1.1,1,0.5,1,1.1,1.4,1.6,3,10],medium:[33,11,4,2,1.1,0.6,0.3,0.6,1.1,2,4,11,33],high:[170,24,8.1,2,0.7,0.2,0.2,0.2,0.7,2,8.1,24,170]},
   16:{low:[16,9,2,1.4,1.4,1.2,1.1,1,0.5,1,1.1,1.2,1.4,1.4,2,9,16],medium:[110,41,10,5,3,1.5,1,0.5,0.3,0.5,1,1.5,3,5,10,41,110],high:[1000,130,26,9,4,2,0.2,0.2,0.2,0.2,0.2,2,4,9,26,130,1000]}
 };
-const BUYIN=100, KEY='plinko-v1', COUNTS=[5,10,25,50], RISKS=['low','medium','high'], ROWS=[8,12,16];
+const BUYIN=100, KEY='plinko-v1', COUNTS=[1,5,10,25,50], RISKS=['low','medium','high'], ROWS=[8,12,16];
 const $=id=>document.getElementById(id);
 const RTP={};for(const n of ROWS){RTP[n]={};for(const k of RISKS){let c=1,t=0;TABLES[n][k].forEach((m,i)=>{t+=c*m;c=c*(n-i)/(i+1)});RTP[n][k]=t/2**n}}
 const fmt=new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'});
@@ -308,7 +334,7 @@ const signed=v=>(v>0.004?'+':v<-0.004?'−':'')+fmt.format(Math.abs(v));
 const day=v=>v?new Date(v).toLocaleDateString('en-US',{day:'numeric',month:'short',year:'numeric'}):'Earlier';
 const r2=v=>Math.round(v*100)/100;
 const rnd=()=>{const a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]/4294967296};
-const DEF={balance:0,boughtIn:0,buyins:0,pending:0,bet:1,rows:16,risk:'medium',count:10,dropped:0,wagered:0,best:0,hist:[],muted:false,exp:0,started:null,log:[],auto:{n:50,fast:false,loss:25,big:true}};
+const DEF={balance:0,boughtIn:0,buyins:0,pending:0,bet:1,rows:16,risk:'medium',count:1,tab:'manual',mode:'manual',dropped:0,wagered:0,best:0,hist:[],muted:false,exp:0,started:null,log:[],auto:{n:50,fast:false,loss:25,big:true}};
 let S={...DEF,hist:[],log:[]};
 
 function load(d){
@@ -322,7 +348,8 @@ function load(d){
   if(!S.log.length&&+d.sessions>0)S.log=[{legacy:true,n:+d.sessions,in:N(d.lifeIn),out:N(d.lifeOut),net:r2(N(d.lifeOut)-N(d.lifeIn)),wag:0,balls:0,best:0,exp:null,start:null,end:null}];
   S.rows=ROWS.includes(+d.rows)?+d.rows:16;
   S.risk=RISKS.includes(d.risk)?d.risk:'medium';
-  S.count=COUNTS.includes(+d.count)?+d.count:10;
+  S.count=COUNTS.includes(+d.count)?+d.count:1;
+  S.tab=['manual','auto','stats'].includes(d.tab)?d.tab:'manual';S.mode=d.mode==='auto'?'auto':'manual';
   S.muted=d.muted===true;
   const a=d.auto&&typeof d.auto==='object'?d.auto:{};
   S.auto={n:[10,50,100,0].includes(+a.n)?+a.n:50,fast:a.fast===true,loss:Number.isFinite(+a.loss)&&+a.loss>=0?r2(+a.loss):25,big:a.big!==false};
@@ -333,10 +360,28 @@ function load(d){
 function saveLocal(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 function save(){saveLocal();if(me){dirty=true;meta({owner:me.email,rev,dirty:true});if(!pushT)pushT=setTimeout(push,4000)}}
 
-/* sound */
-let ac=null,lastTick=0;
-function audio(){if(S.muted)return;try{if(!ac)ac=new(window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume().catch(()=>{})}catch(e){ac=null}}
-function blip(f,d,v,t){if(!ac||S.muted)return;try{const o=ac.createOscillator(),g=ac.createGain(),n=ac.currentTime;o.type=t||'sine';o.frequency.setValueAtTime(f,n);g.gain.setValueAtTime(v,n);g.gain.exponentialRampToValueAtTime(0.0001,n+d);o.connect(g);g.connect(ac.destination);o.start(n);o.stop(n+d+.02)}catch(e){}}
+/* sound: a marimba-like mallet on a G major pentatonic scale, so overlapping hits stay in tune.
+   Losses thud, small wins tick, bigger multipliers climb the scale, 10x+ plays an arpeggio, the top slot a fanfare. */
+let ac=null,master=null,lastTick=0,landWin=[];
+function audio(){if(S.muted)return;try{if(!ac){ac=new(window.AudioContext||window.webkitAudioContext)();const c=ac.createDynamicsCompressor();c.threshold.value=-18;c.ratio.value=6;master=ac.createGain();master.gain.value=.8;master.connect(c);c.connect(ac.destination)}if(ac.state==='suspended')ac.resume().catch(()=>{})}catch(e){ac=null}}
+function tone(f,t,d,v,type,bend){if(!ac||S.muted)return;try{const o=ac.createOscillator(),g=ac.createGain();o.type=type||'sine';o.frequency.setValueAtTime(f,t);if(bend)o.frequency.exponentialRampToValueAtTime(f*bend,t+d);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(v,t+.006);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(master);o.start(t);o.stop(t+d+.03)}catch(e){}}
+const note=k=>392*2**(([0,2,4,7,9][k%5]+12*Math.floor(k/5))/12);
+function mallet(f,t,v,d){tone(f,t,d,v);tone(f*2,t,d*.45,v*.3);tone(f*3,t,d*.2,v*.1,'triangle')}
+function landSound(m,top){
+  if(!ac||S.muted)return;
+  const t=ac.currentTime,ms=performance.now();
+  landWin=landWin.filter(x=>ms-x<250);landWin.push(ms);
+  const crowd=landWin.length,damp=crowd>6?.55:1;
+  if(m<1){if(crowd<=8)tone(m<.5?140:185,t,.14,.07*damp,'triangle',.6);return}
+  if(m<1.5){mallet(note(2),t,.05*damp,.22);return}
+  const k=Math.min(13,Math.round(Math.log2(m)*2)+3);
+  if(m<10){mallet(note(k),t,.075*damp,.36);return}
+  const steps=top?6:3,gap=top?.09:.07;
+  for(let i=0;i<steps;i++)mallet(note(k+i*2),t+i*gap,.09,.5);
+  if(top)for(let i=0;i<8;i++)tone(1568*2**(i/12),t+steps*gap+i*.03,.12,.03);
+}
+function coinSound(){if(!ac)return;const t=ac.currentTime;mallet(note(10),t,.06,.18);mallet(note(12),t+.07,.06,.3)}
+function cashSound(up){if(!ac)return;const t=ac.currentTime;(up?[5,7,10]:[6,3]).forEach((k,i)=>mallet(note(k),t+i*.1,.07,.4))}
 
 /* board geometry and drawing */
 const fig=$('fig'),cv=$('cv'),ctx=cv.getContext('2d');
@@ -446,14 +491,14 @@ function loop(ts){
 }
 function hit(r,j){
   flashes.push({r,j,t:0});
-  const now=performance.now();if(now-lastTick>32){lastTick=now;blip(900+rnd()*600,.045,.035,'triangle')}
+  const now=performance.now();if(ac&&now-lastTick>28){lastTick=now;tone(1900-r*45+rnd()*80,ac.currentTime,.035,.018,'triangle')}
 }
 function land(b){
   b.done=true;slotT[b.k]=0;
   S.pending=r2(S.pending-b.pay);S.balance=r2(S.balance+b.pay);S.dropped++;
   S.best=Math.max(S.best,b.mult);S.hist.unshift(b.mult);S.hist=S.hist.slice(0,14);
   if(b.mult>=2)floats.push({k:b.k,t:0,text:fmtM(b.mult)+'×'});
-  blip(b.mult>=10?1320:b.mult>=2?880:b.mult>=1?560:300,b.mult>=10?.35:.14,.07,'sine');
+  landSound(b.mult,b.mult>=Math.max(...TABLES[G.n][S.risk]));
   if(b.mult>=10){const e=$('bulbs');e.classList.remove('flash');void e.offsetWidth;e.classList.add('flash')}
   autoCheck(b);
 }
@@ -509,11 +554,11 @@ function ui(){
   const live=balls.length>0||AUTO.on,started=S.buyins>0;
   $('bal').textContent=money(S.balance);
   const net=netNow(),ne=$('net');
-  ne.textContent=(net>0?'+':net<0?'−':'')+money(Math.abs(net));ne.className='netv '+(net>0?'up':net<0?'down':'');
+  ne.textContent=(net>0?'+':net<0?'\u2212':'')+money(Math.abs(net));ne.className='netv '+(net>0?'up':net<0?'down':'');
   $('bought').textContent=money(S.boughtIn);
   $('balls').textContent=S.dropped.toLocaleString('en-US');
   $('wag').textContent=money(S.wagered);
-  $('best').textContent=S.best?fmtM(S.best)+'×':'None yet';
+  $('best').textContent=S.best?fmtM(S.best)+'\u00d7':'None yet';
   const broke=started&&!live&&S.balance<Math.min(S.bet,0.1)+1e-9;
   const buy=$('buy'),cash=$('cash');
   $('acts').className='acts'+(started?'':' solo');
@@ -522,32 +567,42 @@ function ui(){
   cash.textContent=AUTO.on?'Cash out (auto is on)':live?'Cash out (balls landing)':'Cash out '+money(S.balance);
   cash.disabled=!started||live;
   histUI();
-  const d1=$('d1'),dn=$('dn');
-  d1.disabled=!started||AUTO.on||S.bet>S.balance+1e-9;
-  dn.disabled=!started||AUTO.on||S.bet*S.count>S.balance+1e-9;
   for(const id of ['bet','half','dbl'])$(id).disabled=AUTO.on;
-  autoUI(started);
-  dn.textContent=`Drop ${S.count} balls`;
-  $('cost').textContent=`Multi-drop: ${S.count} × ${money(S.bet)} = ${money(r2(S.bet*S.count))}`;
-  $('msg').textContent=!started?'Buy in to get $100 in chips.':broke?'Out of chips. Re-buy to keep playing.':d1.disabled&&!live?'Your bet is more than your balance.':'';
   const bi=$('bet');if(document.activeElement!==bi)bi.value=S.bet.toFixed(2);
-  seg('cnt',COUNTS,S.count,v=>v,v=>{S.count=+v;save();ui()},false);
-  seg('risk',RISKS,S.risk,v=>v[0].toUpperCase()+v.slice(1),v=>{S.risk=v;save();draw();ui()},live);
-  seg('rows',ROWS,S.rows,v=>v,v=>{S.rows=+v;save();geom();draw();ui()},live);
-  $('rtp').textContent=`${S.rows} rows, ${S.risk} risk: top slot pays ${fmtM(TABLES[S.rows][S.risk][0])}×, long-run return ${rtp(S.rows,S.risk).toFixed(1)}%.`+(live?' Locked while balls are in play.':'');
-  $('hist').innerHTML=S.hist.length?S.hist.map(m=>{const[b,c]=chipCol(m);return`<span class="chip" style="background:${b};color:${c}">${fmtM(m)}×</span>`}).join(''):'<span class="empty">No drops yet.</span>';
+  // tabs
+  for(const b of document.querySelectorAll('.tabs [role=tab]')){const on=b.dataset.t===S.tab;b.setAttribute('aria-selected',String(on));b.tabIndex=on?0:-1}
+  $('pplay').hidden=S.tab==='stats';$('pstats').hidden=S.tab!=='stats';
+  $('pman').hidden=S.mode!=='manual';$('pauto').hidden=S.mode!=='auto';
+  seg('cnt',COUNTS,S.count,v=>v,v=>{S.count=+v;save();ui()},AUTO.on);
+  autoUI();
+  $('riskS').value=S.risk;$('rowsS').value=String(S.rows);$('riskS').disabled=$('rowsS').disabled=live;
+  $('rtp').textContent=`Top slot pays ${fmtM(TABLES[S.rows][S.risk][0])}\u00d7. Returns ${rtp(S.rows,S.risk).toFixed(1)}% of bets over time.`+(live?' Locked while balls are in play.':'');
+  // the one big button
+  const g=$('go'),auto=S.mode==='auto';let cost='';
+  if(AUTO.on){g.textContent=`Stop auto (${AUTO.done}${S.auto.n?' of '+S.auto.n:''})`;g.className='btn big stop';g.disabled=false;cost=`This run: ${AUTO.done} ball${AUTO.done===1?'':'s'}, ${signed(netNow()-AUTO.base)} so far.`}
+  else if(auto){g.textContent=S.auto.n?`Start auto: ${S.auto.n} balls`:'Start auto: no limit';g.className='btn big go';g.disabled=!started||S.bet>S.balance+1e-9;cost=AUTO.msg||`${money(S.bet)} a ball, one at a time.`}
+  else{g.textContent=S.count>1?`Drop ${S.count} balls`:'Drop a ball';g.className='btn big sun';g.disabled=!started||S.bet*S.count>S.balance+1e-9;cost=S.count>1?`${S.count} \u00d7 ${money(S.bet)} = ${money(r2(S.bet*S.count))}`:''}
+  $('cost').textContent=cost;
+  $('msg').textContent=!started?'Buy in to get $100 in chips.':broke?'Out of chips. Re-buy to keep playing.':g.disabled&&!live?'Your bet is more than your balance.':'';
+  renderRecent();
   const sd=$('snd');sd.textContent=S.muted?'Sound off':'Sound on';sd.setAttribute('aria-pressed',String(!S.muted));
 }
-$('buy').onclick=()=>{audio();if(!S.buyins){S.started=new Date().toISOString();S.exp=0}S.buyins++;S.boughtIn=r2(S.boughtIn+BUYIN);S.balance=r2(S.balance+BUYIN);blip(660,.18,.06);save();ui()};
+let recentKey='';
+function renderRecent(){
+  const top=S.hist.slice(0,6),k=S.dropped+':'+top.join(',');
+  if(k===recentKey)return;
+  const grew=recentKey!==''&&S.dropped>+recentKey.split(':')[0];recentKey=k;
+  $('recent').innerHTML=top.map((m,i)=>{const[b,c]=chipCol(m);return`<span class="chip${i===0&&grew?' pop':''}" style="background:${b};color:${c}">${fmtM(m)}\u00d7</span>`}).join('');
+}
+function press(){if(AUTO.on)stopAuto();else if(S.mode==='auto')startAuto();else drop(S.count)}
+function setTab(t){S.tab=t;if(t!=='stats')S.mode=t;save();ui()}
+$('buy').onclick=()=>{audio();if(!S.buyins){S.started=new Date().toISOString();S.exp=0}S.buyins++;S.boughtIn=r2(S.boughtIn+BUYIN);S.balance=r2(S.balance+BUYIN);coinSound();save();ui()};
 function entry(x){return{start:x.started,end:new Date().toISOString(),in:x.boughtIn,out:r2(x.balance+x.pending),net:r2(x.balance+x.pending-x.boughtIn),wag:x.wagered,balls:x.dropped,best:x.best,exp:r2(x.exp),legacy:false,n:1}}
-function autoUI(started){
+function autoUI(){
   seg('acnt',[10,50,100,0],S.auto.n,v=>v?v:'No limit',v=>{S.auto.n=+v;save();ui()},AUTO.on);
   seg('aspd',['steady','fast'],S.auto.fast?'fast':'steady',v=>v==='fast'?'Fast':'Steady',v=>{S.auto.fast=v==='fast';save();ui()},AUTO.on);
   const al=$('aloss');if(document.activeElement!==al)al.value=S.auto.loss;al.disabled=AUTO.on;$('abig').checked=S.auto.big;$('abig').disabled=AUTO.on;
-  const b=$('abtn');b.classList.toggle('on',AUTO.on);
-  b.textContent=AUTO.on?`Stop auto (${AUTO.done}${S.auto.n?' of '+S.auto.n:''})`:`Start auto: ${S.auto.n||'no limit'}${S.auto.n?' balls':''} at ${money(S.bet)}`;
-  b.disabled=!AUTO.on&&(!started||S.bet>S.balance+1e-9);
-  $('astat').textContent=AUTO.on?`This run: ${AUTO.done} ball${AUTO.done===1?'':'s'}, ${signed(netNow()-AUTO.base)} so far.`:(AUTO.msg||'Drops one ball at a time with your current bet. Space bar stops it.');
+  $('advsum').textContent=[S.auto.fast?'Fast':'Steady',S.auto.loss?`stop at \u2212$${S.auto.loss}`:'',S.auto.big?'stop on 10\u00d7':''].filter(Boolean).join(', ');
 }
 function totals(){
   const L=S.log,real=L.filter(x=>!x.legacy);
@@ -626,7 +681,7 @@ function cashOut(){
   const rows=[['Bought in',money(t.inn)],['Cashed out',money(t.out)],['Wagered',money(t.wag)],['Balls dropped',t.balls.toLocaleString('en-US')],['Best hit',t.best?fmtM(t.best)+'×':'None'],['The math expected',signed(t.exp)],['Time',when]];
   $('tkrows').innerHTML=rows.map(([a,b])=>`<div><span>${a}</span><b>${b}</b></div>`).join('');
   $('veil').hidden=false;$('again').focus();
-  blip(t.net>0?1040:520,.3,.07);
+  cashSound(t.net>0);
   if(t.net>0){const e=$('bulbs');e.classList.remove('flash');void e.offsetWidth;e.classList.add('flash')}
 }
 const closeTicket=()=>{$('veil').hidden=true;$('buy').focus()};
@@ -634,11 +689,13 @@ $('cash').onclick=cashOut;
 $('close').onclick=closeTicket;
 $('again').onclick=()=>{closeTicket();$('buy').click()};
 $('veil').onclick=e=>{if(e.target.id==='veil')closeTicket()};
-$('abtn').onclick=()=>AUTO.on?stopAuto():startAuto();
+$('go').onclick=press;
+for(const b of document.querySelectorAll('.tabs [role=tab]'))b.onclick=()=>setTab(b.dataset.t);
+document.querySelector('.tabs').onkeydown=e=>{if(e.key!=='ArrowRight'&&e.key!=='ArrowLeft')return;const T=['manual','auto','stats'],i=(T.indexOf(S.tab)+(e.key==='ArrowRight'?1:2))%3;setTab(T[i]);$('tab-'+T[i]).focus()};
+$('riskS').onchange=e=>{S.risk=e.target.value;save();draw();ui()};
+$('rowsS').onchange=e=>{S.rows=+e.target.value;save();geom();draw();ui()};
 $('aloss').onchange=e=>{const v=parseFloat(e.target.value);S.auto.loss=Number.isFinite(v)&&v>0?r2(v):0;save();ui()};
 $('abig').onchange=e=>{S.auto.big=e.target.checked;save();ui()};
-$('d1').onclick=()=>drop(1);
-$('dn').onclick=()=>drop(S.count);
 const setBet=v=>{v=Number.isFinite(v)?v:1;S.bet=Math.max(0.1,r2(v));save();ui()};
 $('bet').onchange=e=>setBet(parseFloat(e.target.value));
 $('half').onclick=()=>setBet(S.bet/2);
@@ -653,8 +710,7 @@ document.addEventListener('keydown',e=>{
   if(!$('sq').hidden){if(e.key==='Escape')closeSq();return}
   if(!$('veil').hidden){if(e.key==='Escape')closeTicket();return}
   const t=document.activeElement&&document.activeElement.tagName;
-  if(e.code==='Space'&&AUTO.on&&t!=='INPUT'){e.preventDefault();stopAuto();return}
-  if(e.code==='Space'&&t!=='INPUT'&&t!=='BUTTON'){e.preventDefault();drop(1)}
+  if(e.code==='Space'&&t!=='INPUT'&&t!=='BUTTON'&&t!=='SELECT'&&t!=='SUMMARY'){e.preventDefault();press()}
 });
 
 /* accounts and sync: email code or passkey sign-in, state saved per account on the server */
