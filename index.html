@@ -173,7 +173,8 @@ button:focus-visible,input:focus-visible{outline:3px solid #2b6cff;outline-offse
 .cbody{flex:0 1 auto;min-height:0;overflow-y:auto;padding:0 16px 14px}
 .foot{flex:none;padding:12px 16px 14px;border-top:1px solid var(--line);background:#fff}
 .foot .btn{width:100%}
-.foot .cost{margin:8px 0 0;min-height:1.4em}
+.foot .cost{margin:8px 0 0}
+.foot .cost:empty{display:none}
 .go{background:#0d8048;color:#fff;box-shadow:inset 0 -4px 0 #075a31}
 #go{position:relative;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 #go.held:not(:disabled){transform:translateY(2px)}
@@ -382,7 +383,6 @@ const signed=v=>(v>0.004?'+':v<-0.004?'−':'')+fmt.format(Math.abs(v));
 const day=v=>v?new Date(v).toLocaleDateString('en-US',{day:'numeric',month:'short',year:'numeric'}):'Earlier';
 const r2=v=>Math.round(v*100)/100;
 const rnd=()=>{const a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]/4294967296};
-const TOUCH=matchMedia('(hover: none)').matches;
 let holding=null,holdT=0,ptrDown=false,spaceTaken=false,navKeys=false;
 document.addEventListener('pointerdown',()=>{navKeys=false},true);
 const DEF={balance:0,boughtIn:0,buyins:0,pending:0,bet:1,rows:8,risk:'medium',tab:'manual',mode:'manual',dropped:0,wagered:0,best:0,hist:[],muted:false,exp:0,started:null,log:[],auto:{n:50,fast:false,loss:25,big:true}};
@@ -631,7 +631,7 @@ function ui(){
   const g=$('go'),gl=$('gol'),auto=S.mode==='auto';let cost='';
   if(AUTO.on){gl.textContent=`Stop auto (${AUTO.done}${S.auto.n?' of '+S.auto.n:''})`;g.className='btn big stop';g.disabled=false;cost=`This run: ${AUTO.done} ball${AUTO.done===1?'':'s'}, net ${signed(netNow()-AUTO.base)}.`}
   else if(auto){gl.textContent=S.auto.n?`Start auto: ${S.auto.n} balls`:'Start auto: no limit';g.className='btn big go';g.disabled=!started||S.bet>S.balance+1e-9;cost=AUTO.msg||`Each ball costs ${money(S.bet)}.`}
-  else{gl.textContent='Drop a ball';g.className='btn big sun';g.disabled=!started||S.bet>S.balance+1e-9;cost=started?(TOUCH?'Hold the button to drop more balls.':'Hold Space to drop more balls.'):''}
+  else{gl.textContent='Drop a ball';g.className='btn big sun';g.disabled=!started||S.bet>S.balance+1e-9;}
   g.classList.toggle('held',!!holding);
   $('cost').textContent=cost;
   $('msg').classList.toggle('hint',!started);
