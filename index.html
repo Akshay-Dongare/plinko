@@ -117,6 +117,13 @@ button:focus-visible,input:focus-visible{outline:3px solid #2b6cff;outline-offse
 .pie i{width:14px;height:14px;border-radius:4px;flex:none}
 #acct{margin-left:auto}
 .bulbs+#acct{margin-left:0}
+.arow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px}
+.arow .field{width:120px;flex:none}
+.chk{display:flex;align-items:center;gap:10px;min-height:44px;font-size:15px;cursor:pointer}
+.chk input{width:20px;height:20px;accent-color:var(--ink);flex:none}
+#abtn{width:100%;margin-top:12px}
+.autob{background:#0d8048;color:#fff;box-shadow:inset 0 -4px 0 #075a31}
+.autob.on{background:var(--bad);box-shadow:inset 0 -4px 0 #8e1520}
 .auth form{margin:0}
 .auth p{margin:0 0 12px}
 .auth .inp{width:100%;min-height:50px;border:2px solid var(--line);border-radius:12px;padding:0 14px;font:600 16px Rubik,sans-serif;color:var(--ink);background:#fff;margin-bottom:8px}
@@ -174,6 +181,17 @@ button:focus-visible,input:focus-visible{outline:3px solid #2b6cff;outline-offse
       </div>
       <p class="cost" id="cost"></p>
       <p class="msg" id="msg" role="status"></p>
+    </section>
+
+    <section class="panel" aria-label="Auto drop">
+      <h2>Auto</h2>
+      <span class="lab" id="acntl">Balls</span>
+      <div class="seg" id="acnt" role="group" aria-labelledby="acntl"></div>
+      <div class="row"><span class="lab" id="aspdl">Speed</span><div class="seg" id="aspd" role="group" aria-labelledby="aspdl"></div></div>
+      <div class="arow"><label class="lab" for="aloss" style="margin:0">Stop if this run is down by</label><div class="field"><span>$</span><input id="aloss" type="number" inputmode="decimal" min="0" step="1" value="25"></div></div>
+      <label class="chk"><input type="checkbox" id="abig" checked>Stop on a 10× or bigger hit</label>
+      <button class="btn autob" id="abtn" type="button">Start auto</button>
+      <p class="cost" id="astat">Drops one ball at a time with your current bet. Space bar stops it.</p>
     </section>
 
     <section class="panel" aria-label="Board settings">
@@ -290,7 +308,7 @@ const signed=v=>(v>0.004?'+':v<-0.004?'−':'')+fmt.format(Math.abs(v));
 const day=v=>v?new Date(v).toLocaleDateString('en-US',{day:'numeric',month:'short',year:'numeric'}):'Earlier';
 const r2=v=>Math.round(v*100)/100;
 const rnd=()=>{const a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]/4294967296};
-const DEF={balance:0,boughtIn:0,buyins:0,pending:0,bet:1,rows:16,risk:'medium',count:10,dropped:0,wagered:0,best:0,hist:[],muted:false,exp:0,started:null,log:[]};
+const DEF={balance:0,boughtIn:0,buyins:0,pending:0,bet:1,rows:16,risk:'medium',count:10,dropped:0,wagered:0,best:0,hist:[],muted:false,exp:0,started:null,log:[],auto:{n:50,fast:false,loss:25,big:true}};
 let S={...DEF,hist:[],log:[]};
 
 function load(d){
@@ -306,6 +324,8 @@ function load(d){
   S.risk=RISKS.includes(d.risk)?d.risk:'medium';
   S.count=COUNTS.includes(+d.count)?+d.count:10;
   S.muted=d.muted===true;
+  const a=d.auto&&typeof d.auto==='object'?d.auto:{};
+  S.auto={n:[10,50,100,0].includes(+a.n)?+a.n:50,fast:a.fast===true,loss:Number.isFinite(+a.loss)&&+a.loss>=0?r2(+a.loss):25,big:a.big!==false};
   S.hist=Array.isArray(d.hist)?d.hist.map(Number).filter(Number.isFinite).slice(0,14):[];
   S.bet=Math.max(0.1,r2(S.bet));
   S.balance=r2(S.balance+S.pending);S.pending=0;
@@ -408,6 +428,7 @@ function kick(){if(!running){running=true;lastTs=performance.now();requestAnimat
 function loop(ts){
   const dt=Math.min(.05,Math.max(0,(ts-lastTs)/1000));lastTs=ts;
   const n=G.n,rowT=.115+.55/n;let landed=false;
+  autoTick(ts);
   for(const b of balls){
     if(b.wait>0){b.wait-=dt;continue}
     const T=b.seg===0?.26:b.seg===n?rowT*1.15:rowT;b.u+=dt*b.sp/T;
@@ -420,7 +441,7 @@ function loop(ts){
   for(let k=0;k<slotT.length;k++)slotT[k]+=dt;
   draw();
   if(landed){save();ui()}
-  const busy=balls.length||flashes.length||floats.length||slotT.some(t=>t<.32);
+  const busy=AUTO.on||balls.length||flashes.length||floats.length||slotT.some(t=>t<.32);
   if(busy)requestAnimationFrame(loop);else{running=false;ui();if(later){const st=later;later=null;adopt(st)}}
 }
 function hit(r,j){
@@ -434,6 +455,7 @@ function land(b){
   if(b.mult>=2)floats.push({k:b.k,t:0,text:fmtM(b.mult)+'×'});
   blip(b.mult>=10?1320:b.mult>=2?880:b.mult>=1?560:300,b.mult>=10?.35:.14,.07,'sine');
   if(b.mult>=10){const e=$('bulbs');e.classList.remove('flash');void e.offsetWidth;e.classList.add('flash')}
+  autoCheck(b);
 }
 function makeBall(i){
   const n=S.rows,R=[0],jit=[];let r=0;
@@ -443,9 +465,30 @@ function makeBall(i){
   return{R,jit,k:r,mult,stake:S.bet,ev:S.bet*RTP[n][S.risk],pay:r2(S.bet*mult),seg:0,u:0,sp:.94+rnd()*.12,wait:i*.075,done:false};
 }
 /* R[q] = rights taken before peg row q; the ball touches peg R[q]+1 of row q */
-function drop(count){
+/* auto mode: one ball per tick from the animation loop, so it pauses with the tab */
+const AUTO={on:false,left:0,done:0,base:0,next:0,msg:''};
+const netNow=()=>r2(S.balance+balls.reduce((a,b)=>a+(b.done?0:b.stake),0)-S.boughtIn);
+function startAuto(){
+  if(AUTO.on||!S.buyins||S.bet>S.balance+1e-9)return;
+  audio();Object.assign(AUTO,{on:true,left:S.auto.n||Infinity,done:0,base:netNow(),next:0,msg:''});
+  ui();kick();
+}
+function stopAuto(msg){if(!AUTO.on)return;AUTO.on=false;AUTO.msg=msg||`Stopped after ${AUTO.done} ball${AUTO.done===1?'':'s'}.`;ui()}
+function autoTick(ts){
+  if(!AUTO.on||ts<AUTO.next)return;
+  if(S.bet>S.balance+1e-9){if(!balls.length)stopAuto('Stopped: out of chips for this bet.');return}
+  drop(1,true);AUTO.done++;AUTO.left--;AUTO.next=ts+(S.auto.fast?160:450);
+  if(AUTO.left<=0)stopAuto(`Done: ${AUTO.done} balls.`);
+}
+function autoCheck(b){
+  if(!AUTO.on)return;
+  const run=r2(netNow()-AUTO.base);
+  if(S.auto.loss>0&&run<=-S.auto.loss)stopAuto(`Stopped: this run is down ${money(-run)}.`);
+  else if(S.auto.big&&b.mult>=10)stopAuto(`Stopped on a ${fmtM(b.mult)}× hit.`);
+}
+function drop(count,fromAuto){
   const cost=r2(S.bet*count);
-  if(!S.buyins||cost>S.balance+1e-9)return;
+  if(!S.buyins||cost>S.balance+1e-9||(AUTO.on&&!fromAuto))return;
   audio();
   S.balance=r2(S.balance-cost);S.wagered=r2(S.wagered+cost);
   for(let i=0;i<count;i++){const b=makeBall(i);S.pending=r2(S.pending+b.pay);S.exp=Math.round((S.exp+b.ev-b.stake)*1e4)/1e4;balls.push(b)}
@@ -463,9 +506,9 @@ function rtp(n,risk){return TABLES[n][risk].reduce((a,m,k)=>a+comb(n,k)*m,0)/2**
 function chipCol(m){return m>=10?['#c3127a','#fff']:m>=3?['#ff4f3b','#fff']:m>=1?['#ff9d2e','#1d1a33']:['#ffd23c','#1d1a33']}
 let resetArm=0;
 function ui(){
-  const live=balls.length>0,started=S.buyins>0;
+  const live=balls.length>0||AUTO.on,started=S.buyins>0;
   $('bal').textContent=money(S.balance);
-  const net=r2(S.balance+balls.reduce((a,b)=>a+b.stake,0)-S.boughtIn),ne=$('net');
+  const net=netNow(),ne=$('net');
   ne.textContent=(net>0?'+':net<0?'−':'')+money(Math.abs(net));ne.className='netv '+(net>0?'up':net<0?'down':'');
   $('bought').textContent=money(S.boughtIn);
   $('balls').textContent=S.dropped.toLocaleString('en-US');
@@ -476,12 +519,14 @@ function ui(){
   $('acts').className='acts'+(started?'':' solo');
   buy.textContent=started?'Re-buy $100':'Buy in $100';
   buy.className='btn '+(!started||(S.balance<S.bet&&!live)?'sun':'ghost');
-  cash.textContent=live?'Cash out (balls landing)':'Cash out '+money(S.balance);
+  cash.textContent=AUTO.on?'Cash out (auto is on)':live?'Cash out (balls landing)':'Cash out '+money(S.balance);
   cash.disabled=!started||live;
   histUI();
   const d1=$('d1'),dn=$('dn');
-  d1.disabled=!started||S.bet>S.balance+1e-9;
-  dn.disabled=!started||S.bet*S.count>S.balance+1e-9;
+  d1.disabled=!started||AUTO.on||S.bet>S.balance+1e-9;
+  dn.disabled=!started||AUTO.on||S.bet*S.count>S.balance+1e-9;
+  for(const id of ['bet','half','dbl'])$(id).disabled=AUTO.on;
+  autoUI(started);
   dn.textContent=`Drop ${S.count} balls`;
   $('cost').textContent=`Multi-drop: ${S.count} × ${money(S.bet)} = ${money(r2(S.bet*S.count))}`;
   $('msg').textContent=!started?'Buy in to get $100 in chips.':broke?'Out of chips. Re-buy to keep playing.':d1.disabled&&!live?'Your bet is more than your balance.':'';
@@ -495,6 +540,15 @@ function ui(){
 }
 $('buy').onclick=()=>{audio();if(!S.buyins){S.started=new Date().toISOString();S.exp=0}S.buyins++;S.boughtIn=r2(S.boughtIn+BUYIN);S.balance=r2(S.balance+BUYIN);blip(660,.18,.06);save();ui()};
 function entry(x){return{start:x.started,end:new Date().toISOString(),in:x.boughtIn,out:r2(x.balance+x.pending),net:r2(x.balance+x.pending-x.boughtIn),wag:x.wagered,balls:x.dropped,best:x.best,exp:r2(x.exp),legacy:false,n:1}}
+function autoUI(started){
+  seg('acnt',[10,50,100,0],S.auto.n,v=>v?v:'No limit',v=>{S.auto.n=+v;save();ui()},AUTO.on);
+  seg('aspd',['steady','fast'],S.auto.fast?'fast':'steady',v=>v==='fast'?'Fast':'Steady',v=>{S.auto.fast=v==='fast';save();ui()},AUTO.on);
+  const al=$('aloss');if(document.activeElement!==al)al.value=S.auto.loss;al.disabled=AUTO.on;$('abig').checked=S.auto.big;$('abig').disabled=AUTO.on;
+  const b=$('abtn');b.classList.toggle('on',AUTO.on);
+  b.textContent=AUTO.on?`Stop auto (${AUTO.done}${S.auto.n?' of '+S.auto.n:''})`:`Start auto: ${S.auto.n||'no limit'}${S.auto.n?' balls':''} at ${money(S.bet)}`;
+  b.disabled=!AUTO.on&&(!started||S.bet>S.balance+1e-9);
+  $('astat').textContent=AUTO.on?`This run: ${AUTO.done} ball${AUTO.done===1?'':'s'}, ${signed(netNow()-AUTO.base)} so far.`:(AUTO.msg||'Drops one ball at a time with your current bet. Space bar stops it.');
+}
 function totals(){
   const L=S.log,real=L.filter(x=>!x.legacy);
   const n=L.reduce((a,x)=>a+(x.legacy?x.n:1),0),net=r2(L.reduce((a,x)=>a+x.net,0));
@@ -559,7 +613,7 @@ function closeSq(){
 }
 $('htile').onclick=openSq;$('sqx').onclick=closeSq;$('sqback').onclick=closeSq;
 function cashOut(){
-  if(!S.buyins||balls.length)return;
+  if(!S.buyins||balls.length||AUTO.on)return;
   audio();
   const e=entry(S),t={out:e.out,inn:e.in,balls:e.balls,wag:e.wag,best:e.best,net:e.net,exp:e.exp};
   S.log.push(e);S.log=S.log.slice(-500);
@@ -580,6 +634,9 @@ $('cash').onclick=cashOut;
 $('close').onclick=closeTicket;
 $('again').onclick=()=>{closeTicket();$('buy').click()};
 $('veil').onclick=e=>{if(e.target.id==='veil')closeTicket()};
+$('abtn').onclick=()=>AUTO.on?stopAuto():startAuto();
+$('aloss').onchange=e=>{const v=parseFloat(e.target.value);S.auto.loss=Number.isFinite(v)&&v>0?r2(v):0;save();ui()};
+$('abig').onchange=e=>{S.auto.big=e.target.checked;save();ui()};
 $('d1').onclick=()=>drop(1);
 $('dn').onclick=()=>drop(S.count);
 const setBet=v=>{v=Number.isFinite(v)?v:1;S.bet=Math.max(0.1,r2(v));save();ui()};
@@ -589,13 +646,14 @@ $('dbl').onclick=()=>setBet(S.buyins&&S.balance>=0.1?Math.min(S.bet*2,S.balance)
 $('snd').onclick=()=>{S.muted=!S.muted;if(!S.muted)audio();save();ui()};
 $('reset').onclick=e=>{
   if(Date.now()-resetArm>3000){resetArm=Date.now();e.target.textContent='Tap again to reset everything';setTimeout(()=>{e.target.textContent='Reset game'},3000);return}
-  const m=S.muted;balls=[];flashes=[];floats=[];load({muted:m});resetArm=0;e.target.textContent='Reset game';save();geom();draw();ui();
+  stopAuto();const m=S.muted;balls=[];flashes=[];floats=[];load({muted:m});resetArm=0;e.target.textContent='Reset game';save();geom();draw();ui();
 };
 document.addEventListener('keydown',e=>{
   if(!$('authv').hidden){if(e.key==='Escape')closeAuth();return}
   if(!$('sq').hidden){if(e.key==='Escape')closeSq();return}
   if(!$('veil').hidden){if(e.key==='Escape')closeTicket();return}
   const t=document.activeElement&&document.activeElement.tagName;
+  if(e.code==='Space'&&AUTO.on&&t!=='INPUT'){e.preventDefault();stopAuto();return}
   if(e.code==='Space'&&t!=='INPUT'&&t!=='BUTTON'){e.preventDefault();drop(1)}
 });
 
@@ -625,6 +683,7 @@ async function push(keep){
 function adopt(st){if(balls.length){later=st;return}load(st);saveLocal();geom();draw();ui()}
 const idle=()=>new Promise(res=>{const c=()=>balls.length?setTimeout(c,200):res();c()});
 async function syncIn(){
+  stopAuto('Paused to load your account.');
   await idle();
   const r=await api('/api/state');if(!r.ok||!me)return;
   const m=getMeta();rev=r.rev||0;
@@ -707,7 +766,7 @@ async function addPasskey(e){
   }catch(err){busy(btn,false);amsg(err&&err.name==='InvalidStateError'?'This device already has a passkey for your account.':err&&err.name==='NotAllowedError'?'Adding the passkey was cancelled.':(err&&err.message)||'Could not add the passkey.')}
 }
 $('pkadd1').onclick=addPasskey;$('pkadd2').onclick=addPasskey;
-function toGuest(){me=null;rev=0;dirty=false;clearTimeout(pushT);try{localStorage.removeItem('plinko-sync')}catch(e){}
+function toGuest(){stopAuto();me=null;rev=0;dirty=false;clearTimeout(pushT);try{localStorage.removeItem('plinko-sync')}catch(e){}
   balls=[];flashes=[];floats=[];later=null;load({muted:S.muted});saveLocal();geom();draw();ui();acctUI();closeAuth()}
 $('aout').onclick=async()=>{if(dirty){clearTimeout(pushT);await push()}await api('/api/auth?op=logout',{method:'POST',body:{}});toGuest()};
 $('adel').onclick=async e=>{
