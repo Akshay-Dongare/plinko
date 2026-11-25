@@ -228,6 +228,24 @@ html.lock{overflow:hidden}
 @keyframes pop2{from{transform:translateY(-8px) scale(.7);opacity:0}}
 @media(max-width:900px){html,body{height:auto}.app{grid-template-columns:minmax(0,1fr);height:auto}.fig{height:clamp(300px,92vw,64svh)}.con{overflow:visible}.ctl,.cbody{overflow:visible}.foot{position:sticky;bottom:0;border-radius:0 0 18px 18px;box-shadow:0 -8px 16px rgba(40,0,6,.12);z-index:2}.recent .chip:nth-child(n+5){display:none}}
 @media(max-width:480px){.bulbs{display:none}.top{justify-content:space-between}.bulbs+#acct{margin-left:auto}.cab{padding:8px 10px 10px;border-radius:20px}}
+/* phone, upright: the board stays at the top and the drop bar with the balance stays at the bottom. The wallet buttons and the settings scroll between them */
+.fbal{display:none;line-height:1.1}
+.fbal .lab{margin:0 0 2px;font-size:12px}
+.fbal b{display:block;font:400 22px/1 Bungee,Rubik,sans-serif;white-space:nowrap;font-variant-numeric:tabular-nums}
+.fnet{display:block;font:700 13px/1.2 Rubik,sans-serif;white-space:nowrap;margin-top:3px}
+@media(max-width:900px) and (min-height:540px){
+html,body{height:100%}
+html{overflow:hidden;overscroll-behavior:none}
+.app{height:100%;height:100dvh;grid-template-rows:auto minmax(0,1fr);gap:12px;padding-bottom:0}
+.fig{min-height:0;height:clamp(200px,min(92vw,100dvh - 364px - max(16px,var(--sat) + 6px) - max(14px,var(--sab))),64svh)}
+.con{overflow-y:auto;overscroll-behavior:contain;padding-bottom:calc(var(--barh,98px) + 12px)}
+.ctl{flex:none}
+.wallet{display:none}
+.foot{position:fixed;inset:auto 0 0;z-index:6;display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;border:0;border-radius:20px 20px 0 0;box-shadow:0 -10px 24px rgba(40,0,6,.28);padding:12px max(16px,var(--sar)) max(14px,var(--sab)) max(16px,var(--sal))}
+.fbal{display:block}
+.foot .btn{flex:1 1 190px;width:auto}
+.foot .cost{flex-basis:100%;margin:0}
+}
 @media(prefers-reduced-motion:reduce){.recent .chip.pop{animation:none}.bulbs.flash i{animation:none}.sq{transition:none}.ticket{animation:none}}
 </style>
 </head>
@@ -310,6 +328,7 @@ html.lock{overflow:hidden}
         </div>
       </div>
       <div class="foot">
+        <div class="fbal"><span class="lab">Balance</span><b id="fbal">$0.00</b><span class="fnet" id="fnet"></span></div>
         <button class="btn big sun" id="go" type="button" aria-keyshortcuts="Space"><span id="gol">Drop a ball</span><kbd class="kc" aria-hidden="true">Space</kbd></button>
         <p class="cost" id="cost"></p>
       </div>
@@ -660,6 +679,7 @@ function ui(){
   const be=$('bal'),bt=money(S.balance);be.textContent=bt;be.style.fontSize=fitSize(bt,[[11,'21px'],[10,'24px'],[9,'26px'],[8,'30px'],[7,'34px']]);
   const net=netNow(),ne=$('net');
   ne.textContent=(net>0?'+':net<0?'\u2212':'')+money(Math.abs(net));ne.className='netv '+(net>0?'up':net<0?'down':'');
+  const fb=$('fbal'),fn=$('fnet');fb.textContent=bt;fb.style.fontSize=fitSize(bt,[[11,'15px'],[9,'17px'],[7,'19px']]);fn.textContent='Net '+ne.textContent;fn.className='fnet '+(net>0?'up':net<0?'down':'');
   $('bought').textContent=money(S.boughtIn);
   $('balls').textContent=S.dropped.toLocaleString('en-US');
   $('wag').textContent=money(S.wagered);
@@ -1073,6 +1093,7 @@ function start(data){
   load(saved);save();
   window.claude?.hot?.snapshot?.(()=>S);
   const ro=new ResizeObserver(()=>layout());ro.observe(fig);
+  const bar=document.querySelector('.foot');new ResizeObserver(()=>document.documentElement.style.setProperty('--barh',bar.offsetHeight+'px')).observe(bar);   // the phone scroll area ends above the fixed bar
   layout();ui();
   if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>draw());
   try{if(/^https?:$/.test(location.protocol)&&localStorage.getItem('plinko-gate')==='1'&&!localStorage.getItem('plinko-sync'))setGate(true)}catch(e){}
