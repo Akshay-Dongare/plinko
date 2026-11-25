@@ -138,8 +138,6 @@ html.lock{overflow:hidden}
 .bulbs+#acct{margin-left:0}
 .arow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px}
 .arow .field{width:120px;flex:none}
-.chk{display:flex;align-items:center;gap:10px;min-height:44px;font-size:15px;cursor:pointer}
-.chk input{width:20px;height:20px;accent-color:var(--ink);flex:none}
 .auth form{margin:0}
 .auth p{margin:0 0 12px}
 .auth .inp{width:100%;min-height:50px;border:2px solid var(--line);border-radius:12px;padding:0 14px;font:600 16px Rubik,sans-serif;color:var(--ink);background:#fff;margin-bottom:8px}
@@ -297,7 +295,8 @@ html{overflow:hidden;overscroll-behavior:none}
               <span class="lab" id="aspdl">Speed</span>
               <div class="seg" id="aspd" role="group" aria-labelledby="aspdl"></div>
               <div class="arow"><label class="lab" for="aloss" style="margin:0">Stop when this run loses</label><div class="field"><span class="cs">$</span><input id="aloss" type="number" inputmode="decimal" min="0" step="1" value="25"></div></div>
-              <label class="chk"><input type="checkbox" id="abig" checked>Stop after a hit of 10× or more</label>
+              <div class="arow"><label class="lab" for="awin" style="margin:0">Stop when this run wins</label><div class="field"><span class="cs">$</span><input id="awin" type="number" inputmode="decimal" min="0" step="1" value="25"></div></div>
+              <p class="note" style="margin-top:8px">Type 0 if you do not want a stop rule.</p>
             </details>
           </div>
           <div class="row two">
@@ -450,7 +449,7 @@ const r2=v=>Math.round(v*100)/100;
 const rnd=()=>{const a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]/4294967296};
 let holding=null,holdT=0,ptrDown=false,spaceTaken=false,navKeys=false;
 document.addEventListener('pointerdown',()=>{navKeys=false},true);
-const DEF={balance:0,boughtIn:0,buyins:0,pending:0,unit:0,scale:100,bet:1,rows:8,risk:'medium',tab:'manual',mode:'manual',dropped:0,wagered:0,best:0,hist:[],muted:false,exp:0,started:null,log:[],auto:{n:50,fast:false,loss:25,big:true}};
+const DEF={balance:0,boughtIn:0,buyins:0,pending:0,unit:0,scale:100,bet:1,rows:8,risk:'medium',tab:'manual',mode:'manual',dropped:0,wagered:0,best:0,hist:[],muted:false,exp:0,started:null,log:[],auto:{n:50,fast:false,loss:25,win:25}};
 let S={...DEF,hist:[],log:[]};
 
 function load(d){
@@ -468,7 +467,8 @@ function load(d){
   S.tab=['manual','auto','stats'].includes(d.tab)?d.tab:'manual';S.mode=d.mode==='auto'?'auto':'manual';
   S.muted=d.muted===true;
   const a=d.auto&&typeof d.auto==='object'?d.auto:{};
-  S.auto={n:[10,50,100,0].includes(+a.n)?+a.n:50,fast:a.fast===true,loss:Number.isFinite(+a.loss)&&+a.loss>=0?r2(+a.loss):25,big:a.big!==false};
+  S.auto={n:[10,50,100,0].includes(+a.n)?+a.n:50,fast:a.fast===true,loss:Number.isFinite(+a.loss)&&+a.loss>=0?r2(+a.loss):25,
+    win:a.win!=null&&Number.isFinite(+a.win)&&+a.win>=0?r2(+a.win):a.big===false?0:r2(S.scale/4)};   // saves from before the win rule had a 10x rule: on gives the default, off gives 0
   S.hist=Array.isArray(d.hist)?d.hist.map(Number).filter(Number.isFinite).slice(0,14):[];
   S.bet=Math.max(0.01,r2(S.bet));
   S.balance=r2(S.balance+S.pending);S.pending=0;
@@ -478,7 +478,7 @@ function load(d){
 const stake=()=>me&&me.buyin>0?me.buyin:CURS[CUR].def;
 function minBet(){const v=(S.unit||stake())/1000,p=10**Math.floor(Math.log10(v));return Math.max(CURS[CUR].unit,r2(Math.floor(v/p+1e-9)*p))}
 const defBet=u=>Math.max(minBet(),r2(u/100));
-function applyStake(){const u=stake();if(S.scale!==u){S.scale=u;S.bet=defBet(u);S.auto.loss=r2(u/4)}else if(S.bet<minBet())S.bet=minBet()}
+function applyStake(){const u=stake();if(S.scale!==u){S.scale=u;S.bet=defBet(u);S.auto.loss=S.auto.win=r2(u/4)}else if(S.bet<minBet())S.bet=minBet()}
 function evText(n){const v=Math.abs(n);if(v<0.05)return'';const t=v.toFixed(1).replace(/\.0$/,'');return`${t} evening${t==='1'?'':'s'} out`}
 function saveLocal(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 function save(){saveLocal();if(me){dirty=true;meta({owner:me.email,rev,dirty:true});if(!pushT)pushT=setTimeout(push,4000)}}
@@ -654,7 +654,7 @@ function autoCheck(b){
   if(!AUTO.on)return;
   const run=r2(netNow()-AUTO.base);
   if(S.auto.loss>0&&run<=-S.auto.loss)stopAuto(`Auto stopped. This run lost ${money(-run)}.`);
-  else if(S.auto.big&&b.mult>=10)stopAuto(`Auto stopped after a ${fmtM(b.mult)}× hit.`);
+  else if(S.auto.win>0&&run>=S.auto.win)stopAuto(`Auto stopped. This run won ${money(run)}.`);
 }
 function drop(count,fromAuto){
   const cost=r2(S.bet*count);
@@ -738,8 +738,10 @@ function entry(x){return{start:x.started,end:new Date().toISOString(),in:x.bough
 function autoUI(){
   seg('acnt',[10,50,100,0],S.auto.n,v=>v?v:'No limit',v=>{S.auto.n=+v;save();ui()},AUTO.on);
   seg('aspd',['steady','fast'],S.auto.fast?'fast':'steady',v=>v==='fast'?'Fast':'Normal',v=>{S.auto.fast=v==='fast';save();ui()},AUTO.on);
-  const al=$('aloss');if(document.activeElement!==al)al.value=S.auto.loss;al.disabled=AUTO.on;$('abig').checked=S.auto.big;$('abig').disabled=AUTO.on;
-  $('advsum').textContent=[S.auto.fast?'Fast':'Normal',S.auto.loss?`stop at \u2212${Number.isInteger(S.auto.loss)?whole(S.auto.loss):money(S.auto.loss)}`:'',S.auto.big?'stop at 10\u00d7':''].filter(Boolean).join(', ');
+  const al=$('aloss');if(document.activeElement!==al)al.value=S.auto.loss;al.disabled=AUTO.on;
+  const aw=$('awin');if(document.activeElement!==aw)aw.value=S.auto.win;aw.disabled=AUTO.on;
+  const amt=v=>Number.isInteger(v)?whole(v):money(v);
+  $('advsum').textContent=[S.auto.fast?'Fast':'Normal',S.auto.loss?`stop at \u2212${amt(S.auto.loss)}`:'',S.auto.win?`stop at +${amt(S.auto.win)}`:''].filter(Boolean).join(', ');
 }
 function totals(){
   const L=S.log,real=L.filter(x=>!x.legacy);
@@ -842,7 +844,7 @@ document.querySelector('.tabs').onkeydown=e=>{if(e.key!=='ArrowRight'&&e.key!=='
 $('riskS').onchange=e=>{S.risk=e.target.value;save();draw();ui()};
 $('rowsS').onchange=e=>{S.rows=+e.target.value;save();geom();draw();ui()};
 $('aloss').onchange=e=>{const v=parseFloat(e.target.value);S.auto.loss=Number.isFinite(v)&&v>0?r2(v):0;save();ui()};
-$('abig').onchange=e=>{S.auto.big=e.target.checked;save();ui()};
+$('awin').onchange=e=>{const v=parseFloat(e.target.value);S.auto.win=Number.isFinite(v)&&v>0?r2(v):0;save();ui()};
 const setBet=v=>{v=Number.isFinite(v)?v:defBet(S.unit||stake());S.bet=Math.max(minBet(),r2(v));save();ui()};
 $('bet').onchange=e=>setBet(parseFloat(e.target.value));
 $('half').onclick=()=>setBet(S.bet/2);
@@ -918,7 +920,7 @@ async function push(keep){
 }
 function adopt(st){if(balls.length){later=st;return}load(st);if(me&&me.buyin)applyStake();saveLocal();geom();draw();ui()}
 /* after the account and its game are loaded: scale the bet to the buy-in when the buy-in is new or changed */
-function settle(){if(me&&me.buyin){const k=[S.bet,S.scale,S.auto.loss].join();applyStake();if(k!==[S.bet,S.scale,S.auto.loss].join())save()}ui()}
+function settle(){if(me&&me.buyin){const k=[S.bet,S.scale,S.auto.loss,S.auto.win].join();applyStake();if(k!==[S.bet,S.scale,S.auto.loss,S.auto.win].join())save()}ui()}
 const idle=()=>new Promise(res=>{const c=()=>balls.length?setTimeout(c,200):res();c()});
 async function syncIn(){
   stopAuto('Auto stopped while your account loads.');
