@@ -29,13 +29,13 @@ async function findOrCreateUser(email) {
   const existing = await kv('GET', 'email:' + email);
   if (existing) {
     const raw = await kv('GET', 'user:' + existing);
-    if (raw) return JSON.parse(raw);
+    if (raw) return { ...JSON.parse(raw), created: false };
   }
   const user = { id: rid(16), email, created: new Date().toISOString(), lastSeen: new Date().toISOString() };
   const ok = await kv('SET', 'email:' + email, user.id, 'NX');
   if (ok !== 'OK') return findOrCreateUser(email);
   await pipe([['SET', 'user:' + user.id, JSON.stringify(user)], ['SADD', 'users', user.id]]);
-  return user;
+  return { ...user, created: true };
 }
 
 export default async function handler(req, res) {
@@ -79,7 +79,7 @@ export default async function handler(req, res) {
       await kv('DEL', 'code:' + email);
       const user = await findOrCreateUser(email);
       const cookies = await startSession(res, req, user);
-      return send(res, 200, { user: await publicUser(user) }, cookies);
+      return send(res, 200, { user: await publicUser(user), created: user.created }, cookies);
     }
 
     if (op === 'passkey-login-options') {
@@ -96,7 +96,7 @@ export default async function handler(req, res) {
       await kv('DEL', 'chal:auth:' + cid);
       const response = b.response || {};
       const rawCred = typeof response.id === 'string' && response.id.length < 600 ? await kv('GET', 'cred:' + response.id) : null;
-      if (!rawCred) return send(res, 400, { error: "This passkey isn't linked to an account here. Sign up with your email first, then add a passkey." });
+      if (!rawCred) return send(res, 400, { error: "This passkey isn't linked to an account here. Tap Sign up and use your email first, then add a passkey." });
       const cred = JSON.parse(rawCred);
       const v = await verifyAuthenticationResponse({
         response, expectedChallenge: challenge, expectedOrigin: s.origin, expectedRPID: s.rpID,

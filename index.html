@@ -130,6 +130,8 @@ button:focus-visible,input:focus-visible{outline:3px solid #2b6cff;outline-offse
 #authv.gate{background:rgba(40,0,6,.28)}
 .auth h2{font:400 clamp(24px,5vw,30px)/1.1 Bungee,Rubik,sans-serif;color:var(--ink);margin:0 0 8px}
 .auth .sub{color:var(--muted);margin:0 0 16px}
+.modes{margin-bottom:16px}
+#minpk .btn{margin-top:0}
 .pv{margin-top:14px;font-size:14px;color:var(--muted)}
 .pv summary{cursor:pointer;min-height:44px;display:flex;align-items:center;text-decoration:underline;text-underline-offset:3px;list-style:none}
 .pv summary::-webkit-details-marker{display:none}
@@ -276,23 +278,29 @@ button:focus-visible,input:focus-visible{outline:3px solid #2b6cff;outline-offse
 <div class="veil" id="authv" hidden>
   <div class="ticket auth" role="dialog" aria-modal="true" aria-labelledby="auh">
     <div data-step="email">
-      <h2 id="auh">Sign in to play</h2>
-      <p class="sub">Start with $100 in play chips. New here? Your email is all you need to sign up.</p>
-      <form id="ef"><label class="lab" for="aemail">Email</label><input class="inp" id="aemail" type="email" autocomplete="email" inputmode="email" required placeholder="you@example.com"><button class="btn sun" type="submit">Email me a code</button></form>
-      <div class="or" id="pkor">or, if you've added a passkey</div>
-      <button class="btn ghost" id="pkin" type="button">Sign in with a passkey</button>
+      <div class="seg modes" id="amodes" role="group" aria-label="Sign up or sign in">
+        <button type="button" data-m="up" id="m-up">Sign up</button>
+        <button type="button" data-m="in" id="m-in">Sign in</button>
+      </div>
+      <h2 id="auh">Create your account</h2>
+      <p class="sub" id="asub">Start with $100 in play chips. Your balance and history follow you to any device.</p>
+      <div id="minpk" hidden>
+        <button class="btn inkb" id="pkin" type="button">Sign in with a passkey</button>
+        <div class="or">or get a code by email</div>
+      </div>
+      <form id="ef"><label class="lab" for="aemail">Email</label><input class="inp" id="aemail" type="email" autocomplete="email" inputmode="email" required placeholder="you@example.com"><button class="btn sun" type="submit" id="efb">Create account</button></form>
       <p class="msg" role="status"></p>
       <details class="pv"><summary>How your account works</summary><p>Your email is how you sign in. Your balance and cash-out history are saved to your account so they follow you between devices, and the site owner can see them. You can delete your account any time under Account.</p></details>
     </div>
     <div data-step="code" hidden>
-      <h2>Check your email</h2>
+      <h2 id="codeh">Check your email</h2>
       <p id="codeto">Enter the 6-digit code we sent you. It expires in 10 minutes.</p>
       <form id="cf"><input class="inp code" id="acode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required aria-label="6-digit code"><button class="btn sun" type="submit">Sign in</button></form>
       <p class="msg" role="status"></p>
       <button class="link" type="button" id="cback">Use a different email</button>
     </div>
     <div data-step="passkey" hidden>
-      <h2>Add a passkey?</h2>
+      <h2 id="pkh">Add a passkey?</h2>
       <p>Next time, sign in with Face ID, Touch ID or your phone instead of an email code.</p>
       <button class="btn sun" type="button" id="pkadd1">Add a passkey</button>
       <p class="msg" role="status"></p>
@@ -724,6 +732,15 @@ document.addEventListener('keydown',e=>{
 /* accounts and sync: email code or passkey sign-in, state saved per account on the server */
 let me=null,rev=0,pushT=0,pushing=false,dirty=false,later=null,authEmail='',swa=null,delArm=0,gated=false,canGate=false,demoNext=0;
 const PK=!!(window.PublicKeyCredential&&navigator.credentials);
+let amode='up';
+function knownHere(){try{return localStorage.getItem('plinko-known')==='1'}catch(e){return false}}
+function setMode(m){
+  amode=m;amsg('');
+  for(const b of document.querySelectorAll('#amodes button')){const on=b.dataset.m===m;b.setAttribute('aria-pressed',String(on))}
+  $('auh').textContent=m==='up'?'Create your account':'Welcome back';
+  $('asub').textContent=m==='up'?'Start with $100 in play chips. Your balance and history follow you to any device.':(PK?'Use your passkey, or get a code by email.':'Get a sign-in code by email.');
+  $('minpk').hidden=m!=='in'||!PK;$('efb').textContent=m==='up'?'Create account':'Email me a code';
+}
 async function api(path,o={}){
   try{const r=await fetch(path,{method:o.method||'GET',headers:o.body?{'Content-Type':'application/json'}:undefined,body:o.body?JSON.stringify(o.body):undefined,credentials:'same-origin',keepalive:!!o.keepalive});
     let j={};try{j=await r.json()}catch(e){}return{...j,ok:r.ok,status:r.status}}
@@ -776,7 +793,7 @@ function step(n){
     $('ainfo').textContent=(me.passkeys?`${me.passkeys} passkey${me.passkeys>1?'s':''} on this account. `:'No passkeys yet. ')+'Your game saves to your account as you play.';
     $('pkadd2').hidden=!PK;$('adash').hidden=!me.admin;$('adel').textContent='Delete my account';delArm=0;
   }
-  $('pkin').hidden=$('pkor').hidden=!PK;
+  if(n==='email')setMode(knownHere()?'in':'up');
   const f=$('authv').querySelector(`[data-step="${n}"] input`)||$('authv').querySelector(`[data-step="${n}"] .btn`);f&&f.focus();
 }
 function closeAuth(){if(gated)return;$('authv').hidden=true;$('acct').focus()}
@@ -789,27 +806,29 @@ function loadSWA(){
   if(window.SimpleWebAuthnBrowser)return Promise.resolve();
   return swa||(swa=new Promise((ok,no)=>{const s=document.createElement('script');s.src='https://unpkg.com/@simplewebauthn/browser@14.0.0/dist/bundle/index.umd.min.js';s.onload=ok;s.onerror=()=>{swa=null;no()};document.head.appendChild(s)}));
 }
-async function signedIn(user){
-  me=user;acctUI();
+async function signedIn(user,created){
+  me=user;acctUI();try{localStorage.setItem('plinko-known','1')}catch(e){}
+  $('pkh').textContent=created?'Account created. Add a passkey?':'Add a passkey?';
   if(gated){setGate(false);balls=balls.filter(b=>!b.demo)}
   await syncIn();
   if(PK&&!me.passkeys)step('passkey');else closeAuth();
 }
 function busy(btn,on,label){if(on){btn.dataset.l=btn.textContent;btn.textContent=label;btn.disabled=true}else{btn.textContent=btn.dataset.l||btn.textContent;btn.disabled=false}}
 $('acct').onclick=()=>me?step('acct'):step('email');
+for(const b of document.querySelectorAll('#amodes button'))b.onclick=()=>setMode(b.dataset.m);
 for(const b of document.querySelectorAll('#authv [data-close]'))b.onclick=closeAuth;
 $('authv').onclick=e=>{if(e.target.id==='authv')closeAuth()};
 $('ef').onsubmit=async e=>{
   e.preventDefault();const btn=e.target.querySelector('.btn');authEmail=$('aemail').value.trim().toLowerCase();
   busy(btn,true,'Sending…');const r=await api('/api/auth?op=email-start',{method:'POST',body:{email:authEmail}});busy(btn,false);
   if(!r.ok){amsg(r.error||'Could not send the code.');return}
-  step('code');$('codeto').textContent=`Enter the 6-digit code we sent to ${authEmail}. It expires in 10 minutes.`;$('acode').value='';
+  step('code');$('codeh').textContent=amode==='up'?'Confirm your email':'Check your email';$('codeto').textContent=`Enter the 6-digit code we sent to ${authEmail}. It expires in 10 minutes.`;$('acode').value='';
 };
 $('cf').onsubmit=async e=>{
   e.preventDefault();const btn=e.target.querySelector('.btn');
   busy(btn,true,'Checking…');const r=await api('/api/auth?op=email-verify',{method:'POST',body:{email:authEmail,code:$('acode').value}});busy(btn,false);
   if(!r.ok){amsg(r.error||'Could not sign in.');return}
-  await signedIn(r.user);
+  await signedIn(r.user,r.created);
 };
 $('cback').onclick=()=>step('email');
 $('pkin').onclick=async e=>{
@@ -822,7 +841,7 @@ $('pkin').onclick=async e=>{
     const v=await api('/api/auth?op=passkey-login-verify',{method:'POST',body:{response:resp}});
     if(!v.ok)throw new Error(v.error);
     busy(btn,false);await signedIn(v.user);
-  }catch(err){busy(btn,false);amsg(err&&err.name==='NotAllowedError'?'No passkey came through. If you\'re new, sign up with your email above first. You can add a passkey right after.':(err&&err.message)||'Passkey sign-in failed.')}
+  }catch(err){busy(btn,false);amsg(err&&err.name==='NotAllowedError'?'No passkey came through. New here? Tap Sign up and use your email. You can add a passkey right after.':(err&&err.message)||'Passkey sign-in failed.')}
 };
 async function addPasskey(e){
   const btn=e.currentTarget;busy(btn,true,'Waiting for passkey…');
