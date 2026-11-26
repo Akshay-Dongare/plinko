@@ -41,7 +41,9 @@ This serves the full app at http://localhost:3000 with an in-memory database and
 - All sound is made in the browser with Web Audio. There are no sound files.
 - The win sounds are a mallet on a G major pentatonic scale, so that hits at the same time stay in tune.
 - The music is one loop of 8 bars in G major ("Casino floor"): bells that go up and down on a soft pad, with a slow pulse. It is in `index.html`, below the win sounds.
-- The music starts with the first sound of a session, for example the buy-in. It stops when the sound is off, when the page is hidden and on the sign-in card.
+- The header has two round buttons. The note button is for the music. The speaker button is for the game sounds. Each button has its own on and off, and the game saves the two settings with the account.
+- The music starts with the first push in a session, for example the buy-in. It stops when the note button is off, when the page is hidden and on the sign-in card.
+- A save from before the music has no music setting. If that player had the sound off, the music is off too.
 
 ## Buy-in and currency
 

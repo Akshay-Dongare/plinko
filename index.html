@@ -214,8 +214,8 @@ html.lock{overflow:hidden}
 #go.held:not(:disabled){transform:translateY(2px)}
 .kc{grid-column:3;justify-self:end;font:600 12px/1 Rubik,sans-serif;padding:4px 7px;border-radius:6px;border:1.5px solid currentColor;opacity:.55}
 @media (hover:none){.kc{display:none}}
-.snd.ico{width:44px;padding:0;display:grid;place-items:center}
-.snd .x,.snd.off .w{display:none}.snd.off .x{display:block}
+.snd.ico{width:44px;padding:0;display:grid;place-items:center;flex:none}
+.snd .x,.snd.off .w{display:none}.snd.off .x{display:block}.snd.off .n{opacity:.45}
 .stop{background:var(--bad);color:#fff;box-shadow:inset 0 -4px 0 #8e1520}
 .two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
 .sel{width:100%;min-height:44px;border:2px solid var(--line);border-radius:12px;padding:0 34px 0 12px;font:600 16px Rubik,sans-serif;color:var(--ink);background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%231d1a33' stroke-width='2'/%3E%3C/svg%3E") no-repeat right 12px center;appearance:none;-webkit-appearance:none;cursor:pointer}
@@ -237,6 +237,9 @@ html.lock{overflow:hidden}
 @keyframes pop2{from{transform:translateY(-8px) scale(.7);opacity:0}}
 @media(max-width:900px){html,body{height:auto}.app{grid-template-columns:minmax(0,1fr);height:auto}.fig{height:clamp(300px,92vw,64svh)}.con{overflow:visible}.ctl,.cbody{overflow:visible}.foot{position:sticky;bottom:0;border-radius:0 0 18px 18px;box-shadow:0 -8px 16px rgba(40,0,6,.12);z-index:2}.recent .chip:nth-child(n+5){display:none}}
 @media(max-width:480px){.bulbs{display:none}.top{justify-content:space-between}.bulbs+#acct{margin-left:auto}.cab{padding:8px 10px 10px;border-radius:20px}}
+/* phone header: the title gets smaller, so that Account and the two round buttons keep their size */
+@media(max-width:480px){.top{gap:8px}#acct{padding:0 12px}h1{font-size:clamp(18px,23.4vw - 60px,30px)}}
+@media(max-width:350px){.top{gap:6px}#acct{padding:0 8px}h1{font-size:clamp(18px,23.4vw - 56.5px,24px)}}
 /* phone, upright: the board stays at the top and the drop bar with the balance stays at the bottom. The wallet buttons and the settings scroll between them */
 .fbal{display:none;line-height:1.1}
 .fbal .lab{margin:0 0 2px;font-size:12px}
@@ -268,6 +271,7 @@ html{overflow:hidden;overscroll-behavior:none}
       <h1>Plinko</h1>
       <div class="bulbs" id="bulbs" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
       <button class="snd" id="acct" hidden>Sign in</button>
+      <button class="snd ico" id="mus" type="button" aria-label="Music" aria-pressed="true" title="Stop the music"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g class="n"><path d="M9 18V6l10-2.4v12"/><circle cx="6.5" cy="18" r="2.6" fill="currentColor"/><circle cx="16.5" cy="15.6" r="2.6" fill="currentColor"/></g><path class="x" d="M4 3.5l16 17"/></svg></button>
       <button class="snd ico" id="snd" type="button" aria-label="Mute" aria-pressed="false" title="Mute"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z" fill="currentColor"/><path class="w" d="M15.5 8.5a5 5 0 0 1 0 7"/><path class="w" d="M18.5 5.5a9 9 0 0 1 0 13"/><path class="x" d="M16 9.5l5 5m0-5-5 5"/></svg></button>
     </div>
     <div class="fig" id="fig"><canvas id="cv" aria-label="Board with pegs and multiplier slots"></canvas><div class="recent" id="recent" aria-label="Last hits"></div></div>
@@ -463,7 +467,7 @@ const r2=v=>Math.round(v*100)/100;
 const rnd=()=>{const a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]/4294967296};
 let holding=null,holdT=0,ptrDown=false,spaceTaken=false,navKeys=false;
 document.addEventListener('pointerdown',()=>{navKeys=false},true);
-const DEF={balance:0,boughtIn:0,buyins:0,pending:0,unit:0,scale:100,bet:1,rows:8,risk:'medium',tab:'manual',mode:'manual',dropped:0,wagered:0,best:0,hist:[],muted:false,exp:0,started:null,log:[],auto:{n:50,fast:false,loss:25,win:25}};
+const DEF={balance:0,boughtIn:0,buyins:0,pending:0,unit:0,scale:100,bet:1,rows:8,risk:'medium',tab:'manual',mode:'manual',dropped:0,wagered:0,best:0,hist:[],muted:false,music:true,exp:0,started:null,log:[],auto:{n:50,fast:false,loss:25,win:25}};
 let S={...DEF,hist:[],log:[]};
 
 function load(d){
@@ -479,7 +483,7 @@ function load(d){
   S.rows=ROWS.includes(+d.rows)?+d.rows:8;
   S.risk=RISKS.includes(d.risk)?d.risk:'medium';
   S.tab=['manual','auto','stats'].includes(d.tab)?d.tab:'manual';S.mode=d.mode==='auto'?'auto':'manual';
-  S.muted=d.muted===true;
+  S.muted=d.muted===true;S.music=typeof d.music==='boolean'?d.music:!S.muted;   // saves from before the music: a muted game stays silent
   const a=d.auto&&typeof d.auto==='object'?d.auto:{};
   S.auto={n:[10,50,100,0].includes(+a.n)?+a.n:50,fast:a.fast===true,loss:Number.isFinite(+a.loss)&&+a.loss>=0?r2(+a.loss):25,
     win:a.win!=null&&Number.isFinite(+a.win)&&+a.win>=0?r2(+a.win):a.big===false?0:r2(S.scale/4)};   // saves from before the win rule had a 10x rule: on gives the default, off gives 0
@@ -500,7 +504,7 @@ function save(){saveLocal();if(me){dirty=true;meta({owner:me.email,rev,dirty:tru
 /* sound: a marimba-like mallet on a G major pentatonic scale, so overlapping hits stay in tune.
    Losses thud, small wins tick, bigger multipliers climb the scale, 10x+ plays an arpeggio, the top slot a fanfare. */
 let ac=null,master=null,lastTick=0,landWin=[];
-function audio(){if(S.muted)return;try{if(!ac){ac=new(window.AudioContext||window.webkitAudioContext)();const c=ac.createDynamicsCompressor();c.threshold.value=-18;c.ratio.value=6;master=ac.createGain();master.gain.value=.8;master.connect(c);c.connect(ac.destination)}if(ac.state!=='running')ac.resume().catch(()=>{})}catch(e){ac=null}try{musStart()}catch(e){}}
+function audio(){if(S.muted&&!S.music)return;try{if(!ac){ac=new(window.AudioContext||window.webkitAudioContext)();const c=ac.createDynamicsCompressor();c.threshold.value=-18;c.ratio.value=6;master=ac.createGain();master.gain.value=.8;master.connect(c);c.connect(ac.destination)}if(ac.state!=='running')ac.resume().catch(()=>{})}catch(e){ac=null}try{musStart()}catch(e){}}
 function tone(f,t,d,v,type,bend){if(!ac||S.muted)return;try{const o=ac.createOscillator(),g=ac.createGain();o.type=type||'sine';o.frequency.setValueAtTime(f,t);if(bend)o.frequency.exponentialRampToValueAtTime(f*bend,t+d);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(v,t+.006);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(master);o.start(t);o.stop(t+d+.03)}catch(e){}}
 const note=k=>392*2**(([0,2,4,7,9][k%5]+12*Math.floor(k/5))/12);
 function mallet(f,t,v,d){tone(f,t,d,v);tone(f*2,t,d*.45,v*.3);tone(f*3,t,d*.2,v*.1,'triangle')}
@@ -545,7 +549,7 @@ function musBar(t,b){
   if(b===3||b===7)[91,93,95,98,103].forEach((m,i)=>mbell(m,t+3*q+i*.055,.45,.02));   // a short run of high bells
 }
 function musStart(){
-  if(MUS.on||!ac||S.muted||document.hidden||gated)return;
+  if(MUS.on||!ac||!S.music||document.hidden||gated)return;
   if(!MUS.noise){MUS.noise=ac.createBuffer(1,ac.sampleRate,ac.sampleRate);const d=MUS.noise.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1}
   const bus=MUS.bus=ac.createGain(),echo=MUS.echo=ac.createDelay(1),fb=ac.createGain(),wet=ac.createGain();
   bus.gain.value=.28;echo.delayTime.value=.388;fb.gain.value=.32;wet.gain.value=.5;echo.connect(fb);fb.connect(echo);echo.connect(wet);wet.connect(bus);bus.connect(master);
@@ -764,7 +768,8 @@ function ui(){
   $('msg').classList.toggle('hint',!started);
   $('msg').textContent=!started?`Buy in to receive ${whole(stake())} in chips.`:broke?'You have no chips. Re-buy to play again.':g.disabled&&!live?'Your bet is more than your balance.':'';
   renderRecent();
-  const sd=$('snd');if(S.muted)musStop();sd.classList.toggle('off',S.muted);sd.setAttribute('aria-pressed',String(S.muted));sd.title=S.muted?'Unmute':'Mute';
+  const mu=$('mus');if(!S.music)musStop();mu.classList.toggle('off',!S.music);mu.setAttribute('aria-pressed',String(S.music));mu.title=S.music?'Stop the music':'Start the music';
+  const sd=$('snd');sd.classList.toggle('off',S.muted);sd.setAttribute('aria-pressed',String(S.muted));sd.title=S.muted?'Unmute':'Mute';
 }
 let recentKey='';
 function renderRecent(){
@@ -901,7 +906,8 @@ const setBet=v=>{v=Number.isFinite(v)?v:defBet(S.unit||stake());S.bet=Math.max(m
 $('bet').onchange=e=>setBet(parseFloat(e.target.value));
 $('half').onclick=()=>setBet(S.bet/2);
 $('dbl').onclick=()=>setBet(S.buyins&&S.balance>=minBet()?Math.min(S.bet*2,S.balance):S.bet*2);
-$('snd').onclick=()=>{S.muted=!S.muted;if(S.muted)musStop();else audio();save();ui()};
+$('snd').onclick=()=>{S.muted=!S.muted;if(!S.muted)audio();save();ui()};
+$('mus').onclick=()=>{S.music=!S.music;if(S.music)audio();else musStop();save();ui()};
 document.addEventListener('keydown',e=>{
   if(!$('authv').hidden){if(e.key==='Escape')closeAuth();return}
   if(!$('sq').hidden){if(e.key==='Escape')closeSq();return}
@@ -986,7 +992,7 @@ async function syncIn(){
   }
   const guest=!m.owner,gl=guest?S.log.slice():[];
   if(guest&&S.buyins>0)gl.push(entry(S));
-  if(!r.state){if(!guest)load({muted:S.muted});dirty=true;saveLocal();geom();draw();ui();push();return}
+  if(!r.state){if(!guest)load({muted:S.muted,music:S.music});dirty=true;saveLocal();geom();draw();ui();push();return}
   load(r.state);
   const seen=new Set(S.log.map(x=>x.end)),add=gl.filter(x=>x.end&&!seen.has(x.end));
   if(add.length){S.log=S.log.concat(add).sort((a,b)=>String(a.end).localeCompare(String(b.end))).slice(-500);dirty=true}
@@ -1109,7 +1115,7 @@ async function addPasskey(e){
 }
 $('pkadd1').onclick=addPasskey;$('pkadd2').onclick=addPasskey;$('pkadd3').onclick=addPasskey;
 function toGuest(){stopAuto();me=null;needName=needStake=offerPk=false;$('authv').classList.remove('must');CUR=guessCur();P1.set(CUR,0,false);rev=0;dirty=false;clearTimeout(pushT);try{localStorage.removeItem('plinko-sync')}catch(e){}
-  balls=[];flashes=[];floats=[];later=null;load({muted:S.muted});saveLocal();geom();draw();ui();acctUI();closeAuth();if(canGate)setGate(true)}
+  balls=[];flashes=[];floats=[];later=null;load({muted:S.muted,music:S.music});saveLocal();geom();draw();ui();acctUI();closeAuth();if(canGate)setGate(true)}
 $('aout').onclick=async()=>{if(dirty){clearTimeout(pushT);await push()}await api('/api/auth?op=logout',{method:'POST',body:{}});toGuest()};
 $('adel').onclick=async e=>{
   if(Date.now()-delArm>4000){delArm=Date.now();e.target.textContent='Push again to delete your account and history';return}
