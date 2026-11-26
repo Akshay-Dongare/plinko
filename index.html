@@ -157,6 +157,8 @@ html.lock{overflow:hidden}
 .or{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:13px;margin:14px 0}
 .or::before,.or::after{content:"";flex:1;border-top:1px solid var(--line)}
 .priv{font-size:13px;color:var(--muted);margin:14px 0 0}
+/* one line for a computer and one line for a phone or a tablet: the finger as the pointer shows the second one */
+.tcw{display:none}@media(pointer:coarse){.pcw{display:none}.tcw{display:block}}
 #authv.gate{--dim:rgba(40,0,6,.28)}
 .auth h2{font:400 clamp(24px,5vw,30px)/1.1 Bungee,Rubik,sans-serif;color:var(--ink);margin:0 0 8px}
 .auth .sub{color:var(--muted);margin:0 0 16px}
@@ -428,7 +430,8 @@ html{overflow:hidden;overscroll-behavior:none}
       <button class="btn sun" type="button" id="pkadd2">Add a passkey</button>
       <button class="btn ghost" type="button" id="aout">Sign out</button>
       <p class="msg" role="status"></p>
-      <p class="priv">If other persons use this computer, sign out after you play.</p>
+      <p class="priv pcw">If other persons use this computer, sign out after you play.</p>
+      <p class="priv tcw">If other persons use this device, sign out after you play.</p>
       <button class="link" type="button" id="astk">Change your buy-in</button>
       <button class="link" type="button" id="aname2">Change your name</button>
       <button class="link" type="button" id="pkadd3">Add a passkey for a different device</button>
