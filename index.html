@@ -387,7 +387,7 @@ html{overflow:hidden;overscroll-behavior:none}
         <button type="button" data-m="in" id="m-in">Sign in</button>
       </div>
       <h2 id="auh">Create your account</h2>
-      <p class="sub" id="asub" hidden></p>
+      <p class="sub" id="asub">This game uses play money only. You do not pay real money.</p>
       <div id="minpk" hidden>
         <button class="btn inkb" id="pkin" type="button">Sign in with a passkey</button>
         <div class="or">or receive a code by email</div>
@@ -956,7 +956,7 @@ const hasHist=()=>S.log.length>0||S.buyins>0;
 /* the buy-in question: 4 tiles in one currency, a field for a different amount, and a quiet link to the other currency */
 function picker(el){
   const st={cur:CUR,amt:0,lock:false};
-  el.innerHTML=`<span class="lab" id="${el.id}q">How much does a good evening out cost you?</span><div class="seg" role="group" aria-labelledby="${el.id}q"></div><div class="field"><span class="cs"></span><input type="text" inputmode="numeric" autocomplete="off" enterkeyhint="done" maxlength="6" placeholder="A different amount" aria-label="A different amount"></div><div class="stkf"><span>This amount is your buy-in.</span><button class="link" type="button"></button></div>`;
+  el.innerHTML=`<span class="lab" id="${el.id}q">How much does a good evening out cost you?</span><div class="seg" role="group" aria-labelledby="${el.id}q"></div><div class="field"><span class="cs"></span><input type="text" inputmode="numeric" autocomplete="off" enterkeyhint="done" maxlength="6" placeholder="A different amount" aria-label="A different amount"></div><div class="stkf"><span>Your <span class="nb">buy-in</span> is play money.</span><button class="link" type="button"></button></div>`;
   const tiles=el.querySelector('.seg'),inp=el.querySelector('input'),sw=el.querySelector('.link');
   const show=()=>{const c=CURS[st.cur];
     tiles.innerHTML=c.tiles.map(v=>`<button type="button" data-v="${v}" aria-pressed="${!inp.value&&v===st.amt}">${whole(v,st.cur)}</button>`).join('');
@@ -978,7 +978,7 @@ function setMode(m){
   amode=m;amsg('');
   for(const b of document.querySelectorAll('#amodes button')){const on=b.dataset.m===m;b.setAttribute('aria-pressed',String(on))}
   $('auh').textContent=m==='up'?'Create your account':'Welcome back';
-  $('asub').hidden=m==='up';$('asub').textContent=PK?'Use your passkey, or receive a code by email.':'We send a sign-in code to your email.';
+  $('asub').textContent=m==='up'?'This game uses play money only. You do not pay real money.':PK?'Use your passkey, or receive a code by email.':'We send a sign-in code to your email.';   // a new visitor must see on the first card that no real money is asked
   $('nmrow').hidden=$('stk1').hidden=m!=='up';$('aname').required=m==='up';
   $('minpk').hidden=m!=='in'||!PK;$('efb').textContent=m==='up'?'Create account':'Send a code';
 }
