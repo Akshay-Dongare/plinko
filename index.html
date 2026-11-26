@@ -1044,14 +1044,14 @@ function closeAuth(){if(gated||needName||needStake)return;$('authv').hidden=true
 /* sign-in gate: shown whenever accounts are available and nobody is signed in; the board plays demo balls behind it */
 function setGate(on){
   gated=on;$('authv').classList.toggle('gate',on);document.querySelector('.app').inert=on;
-  if(on){musStop();step('email');kick()}
+  if(on){musStop();step('email');pendResume();kick()}
 }
 function loadSWA(){
   if(window.SimpleWebAuthnBrowser)return Promise.resolve();
   return swa||(swa=new Promise((ok,no)=>{const s=document.createElement('script');s.src='https://unpkg.com/@simplewebauthn/browser@14.0.0/dist/bundle/index.umd.min.js';s.onload=ok;s.onerror=()=>{swa=null;no()};document.head.appendChild(s)}));
 }
 async function signedIn(user,created){
-  me=user;acctUI();try{localStorage.setItem('plinko-known','1')}catch(e){}
+  me=user;acctUI();pend(null);try{localStorage.setItem('plinko-known','1')}catch(e){}
   $('pkh').textContent=created?'Your account is ready. Add a passkey?':'Add a passkey?';
   if(gated){setGate(false);balls=balls.filter(b=>!b.demo)}
   await syncIn();
@@ -1107,15 +1107,24 @@ $('ef').onsubmit=async e=>{
   const was=document.activeElement,kb=holdKb();
   busy(btn,true,'Wait…');const r=await api('/api/auth?op=email-start',{method:'POST',body:{email:authEmail}});busy(btn,false);
   if(!r.ok){if(was&&was.focus)was.focus();kb();amsg(r.error||'We could not send the code.');return}
-  step('code');kb();$('codeh').textContent=amode==='up'?'Confirm your email':'Check your email';$('codeto').textContent=`Type the 6-digit code that we sent to ${authEmail}. You can use the code for 10 minutes.`;$('acode').value='';
+  codeStep();kb();pend({e:authEmail,n:authName,s:authStake,m:amode,t:Date.now()});
 };
+/* A phone can load the page again when the player comes back from the mail app. Then the card for the code was gone, and the player had to start again.
+   So the open request (email, name, buy-in) stays on this device for 10 minutes, the life of a code, and the code card comes back after a reload */
+function codeStep(){step('code');$('codeh').textContent=amode==='up'?'Confirm your email':'Check your email';$('codeto').textContent=`Type the 6-digit code that we sent to ${authEmail}. You can use the code for 10 minutes.`;$('acode').value=''}
+function pend(v){try{v?localStorage.setItem('plinko-code',JSON.stringify(v)):localStorage.removeItem('plinko-code')}catch(e){}}
+function pendResume(){
+  let p=null;try{p=JSON.parse(localStorage.getItem('plinko-code')||'null')}catch(e){}
+  if(!p||typeof p.e!=='string'||!(Date.now()-p.t<6e5)){pend(null);return}
+  authEmail=p.e;authName=typeof p.n==='string'?p.n:'';authStake=p.s&&typeof p.s==='object'?p.s:null;amode=p.m==='in'?'in':'up';codeStep();
+}
 $('cf').onsubmit=async e=>{
   e.preventDefault();const btn=e.target.querySelector('.btn');
   busy(btn,true,'Wait…');const r=await api('/api/auth?op=email-verify',{method:'POST',body:{email:authEmail,code:$('acode').value,name:authName,...(authStake?{cur:authStake.cur,buyin:authStake.amt}:{})}});busy(btn,false);
   if(!r.ok){amsg(r.error||'Sign-in failed.');return}
   await signedIn(r.user,r.created);
 };
-$('cback').onclick=()=>step('email');
+$('cback').onclick=()=>{pend(null);step('email')};
 $('pkin').onclick=async e=>{
   const btn=e.currentTarget;busy(btn,true,'Use your passkey now');
   try{

@@ -82,6 +82,7 @@ This serves the full app at http://localhost:3000 with an in-memory database and
 ## How sign-in works
 
 - New players sign in with their email and a 6-digit code (expires in 10 minutes, 5 tries, 5 codes an hour).
+- A phone can load the page again when the player comes back from the mail app. The open code request (email, name, buy-in) stays on the device for 10 minutes in `localStorage` (`plinko-code`), so the card for the code comes back. A sign-in or "Use a different email" removes it.
 - After that they can add a passkey (Face ID, Touch ID, Windows Hello or a phone via QR) for one-tap sign-in.
 - Sessions last 30 days in an HttpOnly cookie. Signing out clears the game from that device.
 - Guest history on a device is merged into the account the first time that device signs in.
