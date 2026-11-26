@@ -923,6 +923,9 @@ $('snd').onclick=()=>{S.muted=!S.muted;if(!S.muted)audio();save();ui()};
 $('mus').onclick=()=>{if(S.music&&!MUS.on&&!gated){audio();if(ac)return}S.music=!S.music;if(S.music)audio();else musStop();save();ui()};
 const wake=e=>{if(!S.music||gated||MUS.on||(e.target&&e.target.closest&&e.target.closest('#mus')))return;audio()};
 for(const t of['pointerup','touchend','click','keydown'])addEventListener(t,wake,{capture:true,passive:true});
+/* Chrome lets sound start with no touch after a reload that the page does itself. So the page does the reload for the reload keys.
+   The reload button of the browser and a pull on a phone cannot do this: there the first touch starts the music */
+addEventListener('keydown',e=>{if(S.music&&!e.shiftKey&&!e.altKey&&(e.key==='F5'||(e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='r')){e.preventDefault();location.reload()}});
 document.addEventListener('keydown',e=>{
   if(!$('authv').hidden){if(e.key==='Escape')closeAuth();return}
   if(!$('sq').hidden){if(e.key==='Escape')closeSq();return}
