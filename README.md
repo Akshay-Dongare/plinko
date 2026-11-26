@@ -45,6 +45,12 @@ This serves the full app at http://localhost:3000 with an in-memory database and
 - Safari cannot tell the height of the status bar of the installed app, so `startPic` has a small table of iPhone screen heights. A screen that is not in the table gets a usual value, and the shapes can be some points off.
 - Android makes its own start-up screen from `manifest.webmanifest`.
 
+## The fall of a ball
+
+- The result of a ball is fixed at the moment of the drop: one 50/50 choice for each row. The fall is only a picture of that result. It does not change the odds.
+- The ball falls with gravity and bounces on the pegs. The code makes a number of falls and uses the first one that ends in the slot of the result (`fall` in `index.html`).
+- If the code finds no such fall, the ball goes from peg to peg on a fixed path.
+
 ## Sound and music
 
 - All sound is made in the browser with Web Audio. There are no sound files.
