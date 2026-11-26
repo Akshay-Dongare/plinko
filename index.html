@@ -43,7 +43,7 @@ html{background:var(--set2);touch-action:manipulation}
 body{margin:0;background:radial-gradient(120% 90% at 25% 0%,#ec3b3f 0%,var(--set) 45%,#b31923 100%) var(--set2);color:var(--ink);font:16px/1.45 Rubik,system-ui,sans-serif;overflow-x:clip}
 .app{height:100%;display:grid;grid-template-columns:minmax(0,1fr) 340px;grid-template-rows:minmax(0,1fr);gap:18px;padding:max(16px,calc(var(--sat) + 6px)) max(16px,2vw,var(--sar)) max(16px,var(--sab)) max(16px,2vw,var(--sal));max-width:1440px;margin:0 auto}
 .cab{display:grid;grid-template-rows:auto minmax(0,1fr);background:var(--set2);border-radius:26px;padding:10px 14px 14px;box-shadow:inset 0 2px 0 rgba(255,255,255,.2),inset 0 -6px 0 rgba(0,0,0,.2),0 10px 0 rgba(80,0,8,.25)}
-.top{display:flex;align-items:center;gap:14px;padding:2px 4px 10px;color:#fff}
+.top{display:flex;align-items:center;gap:14px;padding:2px 4px 22px;color:#fff}
 h1{font:400 clamp(30px,3.6vw,44px)/1.05 Bungee,Rubik,sans-serif;margin:0;letter-spacing:.01em;text-shadow:0 3px 0 rgba(0,0,0,.25)}
 .bulbs{flex:1;display:flex;gap:10px;height:14px;overflow:hidden;justify-content:center;flex-wrap:wrap}
 .bulbs i{width:14px;height:14px;border-radius:50%;background:#ffe7a0;box-shadow:0 0 8px #ffcf40,inset 0 -2px 0 #e5b33a}
@@ -220,7 +220,9 @@ html.lock{overflow:hidden}
 #go.held:not(:disabled){transform:translateY(2px)}
 .kc{grid-column:3;justify-self:end;font:600 12px/1 Rubik,sans-serif;padding:4px 7px;border-radius:6px;border:1.5px solid currentColor;opacity:.55}
 @media (hover:none){.kc{display:none}}
-.snd.ico{width:44px;padding:0;display:grid;place-items:center;flex:none}
+.snd.ico{width:44px;padding:0;display:grid;place-items:center;flex:none;position:relative}
+/* a word below each round sound button, so that a new player knows what the button does. The word is part of the button */
+.snd .bl{position:absolute;left:50%;top:47px;transform:translateX(-50%);font:600 11px/1 Rubik,sans-serif;white-space:nowrap;opacity:.92}
 .snd .x,.snd.off .w{display:none}.snd.off .x{display:block}.snd.off .n{opacity:.45}
 .stop{background:var(--bad);color:#fff;box-shadow:inset 0 -4px 0 #8e1520}
 .two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
@@ -258,7 +260,7 @@ html.lock{overflow:hidden}
 html,body{height:100%}
 html{overflow:hidden;overscroll-behavior:none}
 .app{height:100%;height:100dvh;grid-template-rows:auto minmax(0,1fr);gap:12px;padding-bottom:0}
-.fig{min-height:0;height:clamp(200px,min(92vw,100dvh - 364px - max(16px,var(--sat) + 6px) - max(14px,var(--sab))),64svh)}
+.fig{min-height:0;height:clamp(200px,min(92vw,100dvh - 376px - max(16px,var(--sat) + 6px) - max(14px,var(--sab))),64svh)}
 .con{overflow-y:auto;overscroll-behavior:contain;padding-bottom:calc(var(--barh,98px) + 12px)}
 .ctl{flex:none}
 .wallet{display:none}
@@ -271,7 +273,7 @@ html{overflow:hidden;overscroll-behavior:none}
    The page keeps the full height and cannot scroll, so that the script can put it back. The game fills the visible area (dvh).
    Before that first focus the page starts behind the status bar: the top padding keeps the game at the same place in the two states */
 @media(max-width:900px) and (min-height:540px) and (display-mode:standalone){html,body{height:100lvh;overflow:hidden}
-.app{padding-top:calc(var(--sat) + 16px)}.fig{height:clamp(200px,min(92vw,100dvh - 380px - var(--sat) - max(14px,var(--sab))),64svh)}}
+.app{padding-top:calc(var(--sat) + 16px)}.fig{height:clamp(200px,min(92vw,100dvh - 392px - var(--sat) - max(14px,var(--sab))),64svh)}}
 @media(prefers-reduced-motion:reduce){.recent .chip.pop{animation:none}.bulbs.flash i{animation:none}.sq{transition:none}.ticket{animation:none}}
 </style>
 </head>
@@ -282,8 +284,8 @@ html{overflow:hidden;overscroll-behavior:none}
       <h1>Plinko</h1>
       <div class="bulbs" id="bulbs" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
       <button class="snd" id="acct" hidden>Sign in</button>
-      <button class="snd ico" id="mus" type="button" aria-label="Music" aria-pressed="true" title="Stop the music"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g class="n"><path d="M9 18V6l10-2.4v12"/><circle cx="6.5" cy="18" r="2.6" fill="currentColor"/><circle cx="16.5" cy="15.6" r="2.6" fill="currentColor"/></g><path class="x" d="M4 3.5l16 17"/></svg></button>
-      <button class="snd ico" id="snd" type="button" aria-label="Mute" aria-pressed="false" title="Mute"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z" fill="currentColor"/><path class="w" d="M15.5 8.5a5 5 0 0 1 0 7"/><path class="w" d="M18.5 5.5a9 9 0 0 1 0 13"/><path class="x" d="M16 9.5l5 5m0-5-5 5"/></svg></button>
+      <button class="snd ico" id="mus" type="button" aria-label="Music" aria-pressed="true" title="Stop the music"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g class="n"><path d="M9 18V6l10-2.4v12"/><circle cx="6.5" cy="18" r="2.6" fill="currentColor"/><circle cx="16.5" cy="15.6" r="2.6" fill="currentColor"/></g><path class="x" d="M4 3.5l16 17"/></svg><span class="bl">Music</span></button>
+      <button class="snd ico" id="snd" type="button" aria-label="Mute" aria-pressed="false" title="Mute"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z" fill="currentColor"/><path class="w" d="M15.5 8.5a5 5 0 0 1 0 7"/><path class="w" d="M18.5 5.5a9 9 0 0 1 0 13"/><path class="x" d="M16 9.5l5 5m0-5-5 5"/></svg><span class="bl">Sounds</span></button>
     </div>
     <div class="fig" id="fig"><canvas id="cv" aria-label="Board with pegs and multiplier slots"></canvas><div class="recent" id="recent" aria-label="Last hits"></div></div>
   </section>
@@ -1232,7 +1234,7 @@ function startPic(){
     // the installed app has no browser bars. Safari cannot tell the height of its status bar (T) and of its home bar (B): they come from the screen height
     const T={667:20,736:20,812:47,844:47,852:59,874:62,896:48,926:47,932:59,956:62}[H]||(H>=1000?24:H>850?59:47),B=H>=1000?20:T>20?34:0,P=H-T;
     const cabE=document.querySelector('.cab'),con=document.querySelector('.con'),footE=document.querySelector('.foot'),cb=R(cabE),fg=R(fig),ft=R(footE);
-    const fh=Math.max(200,Math.min(.92*W,P-380-Math.max(14,B),.64*P)),d=fh-fg.height;   // the board height without browser bars: the same rule as .fig in the phone layout
+    const fh=Math.max(200,Math.min(.92*W,P-392-Math.max(14,B),.64*P)),d=fh-fg.height;   // the board height without browser bars: the same rule as .fig in the phone layout
     const rr=(x,y,w,h,r,f)=>{g.beginPath();g.roundRect(x,y,w,h,r);g.fillStyle=f;g.fill()};
     c.width=Math.round(W*k);c.height=Math.round(H*k);g.scale(k,k);
     g.fillStyle=col('--set2');g.fillRect(0,0,W,H);g.translate(0,T);

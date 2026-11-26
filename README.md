@@ -56,7 +56,7 @@ This serves the full app at http://localhost:3000 with an in-memory database and
 - All sound is made in the browser with Web Audio. There are no sound files.
 - The win sounds are a mallet on a G major pentatonic scale, so that hits at the same time stay in tune.
 - The music is one loop of 8 bars in G major ("Casino floor"): bells that go up and down on a soft pad, with a slow pulse. It is in `index.html`, below the win sounds.
-- The header has two round buttons. The note button is for the music. The speaker button is for the game sounds. Each button has its own on and off, and the game saves the two settings with the account.
+- The header has two round buttons. The note button is for the music. The speaker button is for the game sounds. Each button has its word below it: "Music" and "Sounds". Each button has its own on and off, and the game saves the two settings with the account.
 - A browser lets sound start only after a touch, a click or a key. So the music starts with the first one after the game shows, at any place on the page. This is also true after a reload. A browser that lets sound start with no touch plays the music at once.
 - If the music is on but silent (after a reload, or after iOS stops the sound), a push on the note button starts it. That push does not turn the music off.
 - In Chrome, a reload with F5, Cmd+R or Ctrl+R keeps the music with no touch. The page does that reload itself, and Chrome then lets the sound start. The reload button of the browser and a phone cannot do this: there the first touch starts the music.
