@@ -240,6 +240,9 @@ html.lock{overflow:hidden}
 /* phone header: the title gets smaller, so that Account and the two round buttons keep their size */
 @media(max-width:480px){.top{gap:8px}#acct{padding:0 12px}h1{font-size:clamp(18px,23.4vw - 60px,30px)}}
 @media(max-width:350px){.top{gap:6px}#acct{padding:0 8px}h1{font-size:clamp(18px,23.4vw - 56.5px,24px)}}
+/* phone wallet buttons: the two lines of a long text get the same length. On a narrow phone the text is smaller, so that no text takes three lines */
+@media(max-width:900px){.acts .btn{text-wrap:balance}}
+@media(max-width:350px){.acts .btn{font-size:14px}}
 /* phone, upright: the board stays at the top and the drop bar with the balance stays at the bottom. The wallet buttons and the settings scroll between them */
 .fbal{display:none;line-height:1.1}
 .fbal .lab{margin:0 0 2px;font-size:12px}
