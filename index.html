@@ -558,7 +558,6 @@ function musBar(t,b){
   }
   for(const i of[0,2]){const os=ac.createOscillator(),x=t+i*q;os.frequency.setValueAtTime(140,x);os.frequency.exponentialRampToValueAtTime(50,x+.1);mhit(os,x,.19,.07);os.start(x);os.stop(x+.22)}   // soft kick
   for(let i=0;i<16;i++){const s=ac.createBufferSource(),f=ac.createBiquadFilter(),x=t+i*q/4;s.buffer=MUS.noise;f.type='highpass';f.frequency.value=7500;s.connect(f);mhit(f,x,.03,i%4===2?.04:.014);s.start(x,Math.random()*.5);s.stop(x+.05)}   // shaker
-  if(b===3||b===7)[91,93,95,98,103].forEach((m,i)=>mbell(m,t+3*q+i*.055,.45,.02));   // a short run of high bells
 }
 function musStart(){
   if(MUS.on||!ac||ac.state!=='running'||!S.music||document.hidden||gated)return;   // not running: the browser did not let the sound start yet
