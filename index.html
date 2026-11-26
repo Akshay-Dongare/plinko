@@ -1094,7 +1094,9 @@ const lockPage=()=>{const on=layers.some(e=>!e.hidden),h=document.documentElemen
 for(const e of layers)new MutationObserver(lockPage).observe(e,{attributes:true,attributeFilter:['hidden']});
 function fitCards(){
   const h=document.documentElement,zoom=vv.scale>1.01,top=zoom?0:Math.max(0,vv.offsetTop),bot=zoom?0:h.clientHeight-vv.offsetTop-vv.height;
-  h.style.setProperty('--vt',top+'px');h.style.setProperty('--vb',(bot>1?bot:0)+'px');
+  // a visible area more than 120px shorter than the page is a keyboard: iOS puts a bar of form controls, about 56px high, above it
+  const bar=!zoom&&vv.height<h.clientHeight-120?56:0;
+  h.style.setProperty('--vt',top+'px');h.style.setProperty('--vb',(bot>1?bot:0)+bar+'px');
 }
 if(vv){
   vv.addEventListener('scroll',fitCards);
