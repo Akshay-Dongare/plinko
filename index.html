@@ -259,8 +259,10 @@ html{overflow:hidden;overscroll-behavior:none}
 .foot .cost{flex-basis:100%;margin:0}
 }
 /* installed app on iOS: after a field gets the focus, the visible area starts below the status bar and iOS can leave the page moved up.
-   The page keeps the full height and cannot scroll, so that the script can put it back. The game fills the visible area (dvh) */
-@media(max-width:900px) and (min-height:540px) and (display-mode:standalone){html,body{height:100lvh;overflow:hidden}}
+   The page keeps the full height and cannot scroll, so that the script can put it back. The game fills the visible area (dvh).
+   Before that first focus the page starts behind the status bar: the top padding keeps the game at the same place in the two states */
+@media(max-width:900px) and (min-height:540px) and (display-mode:standalone){html,body{height:100lvh;overflow:hidden}
+.app{padding-top:calc(var(--sat) + 16px)}.fig{height:clamp(200px,min(92vw,100dvh - 380px - var(--sat) - max(14px,var(--sab))),64svh)}}
 @media(prefers-reduced-motion:reduce){.recent .chip.pop{animation:none}.bulbs.flash i{animation:none}.sq{transition:none}.ticket{animation:none}}
 </style>
 </head>
