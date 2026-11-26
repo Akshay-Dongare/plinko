@@ -255,8 +255,9 @@ html{overflow:hidden;overscroll-behavior:none}
 .foot .btn{flex:1 1 190px;width:auto}
 .foot .cost{flex-basis:100%;margin:0}
 }
-/* installed app on iOS: after the keyboard closes, 100% and dvh stay short by the height of the status bar. lvh does not */
-@media(max-width:900px) and (min-height:540px) and (display-mode:standalone){html,body,.app{height:100lvh}}
+/* installed app on iOS: after a field gets the focus, the visible area starts below the status bar and iOS can leave the page moved up.
+   The page keeps the full height and cannot scroll, so that the script can put it back. The game fills the visible area (dvh) */
+@media(max-width:900px) and (min-height:540px) and (display-mode:standalone){html,body{height:100lvh;overflow:hidden}}
 @media(prefers-reduced-motion:reduce){.recent .chip.pop{animation:none}.bulbs.flash i{animation:none}.sq{transition:none}.ticket{animation:none}}
 </style>
 </head>
@@ -1101,10 +1102,15 @@ function fitCards(){
   // a visible area more than 120px shorter than the page is a keyboard: iOS puts a bar of form controls, about 56px high, above it
   const bar=!zoom&&vv.height<h.clientHeight-120?56:0;
   h.style.setProperty('--vt',top+'px');h.style.setProperty('--vb',(bot>1?bot:0)+bar+'px');
+  return bar>0;
 }
 if(vv){
   vv.addEventListener('scroll',fitCards);
-  vv.addEventListener('resize',()=>{fitCards();const a=document.activeElement;if(a&&a.tagName==='INPUT'&&a.closest('.veil'))requestAnimationFrame(()=>{const b=a.form&&a.form.querySelector('.btn');if(b)b.scrollIntoView({block:'nearest'});a.scrollIntoView({block:'nearest'})})});   // show the field and, if there is room, the button of its form
+  // the installed app on iOS leaves a page that cannot scroll moved up after the keyboard closes: put it back
+  const restY=()=>{const h=document.documentElement,y=h.classList.contains('lock')?lockY:0;if(!fitCards()&&vv.scale<=1.01&&scrollY!==y&&getComputedStyle(h).overflowY==='hidden')scrollTo(0,y)};
+  vv.addEventListener('resize',()=>{
+    restY();const a=document.activeElement;if(a&&a.tagName==='INPUT'&&a.closest('.veil'))requestAnimationFrame(()=>{const b=a.form&&a.form.querySelector('.btn');if(b)b.scrollIntoView({block:'nearest'});a.scrollIntoView({block:'nearest'})});   // show the field and, if there is room, the button of its form
+  });
   fitCards();
 }
 
