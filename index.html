@@ -296,7 +296,7 @@ html{overflow:hidden;overscroll-behavior:none}
           <div class="row">
             <label class="lab" for="bet">Bet for each ball</label>
             <div class="bet">
-              <div class="field"><span class="cs">$</span><input id="bet" type="number" inputmode="decimal" min="0.1" step="0.01" value="1.00"></div>
+              <div class="field"><span class="cs">$</span><input id="bet" type="number" inputmode="decimal" enterkeyhint="done" min="0.1" step="0.01" value="1.00"></div>
               <button class="mini" id="half" aria-label="Divide the bet by 2">½</button>
               <button class="mini" id="dbl" aria-label="Multiply the bet by 2">2×</button>
             </div>
@@ -307,8 +307,8 @@ html{overflow:hidden;overscroll-behavior:none}
               <summary><span>Speed and stop rules<small id="advsum"></small></span></summary>
               <span class="lab" id="aspdl">Speed</span>
               <div class="seg" id="aspd" role="group" aria-labelledby="aspdl"></div>
-              <div class="arow"><label class="lab" for="aloss" style="margin:0">Stop when this run loses</label><div class="field"><span class="cs">$</span><input id="aloss" type="number" inputmode="decimal" min="0" step="1" value="25"></div></div>
-              <div class="arow"><label class="lab" for="awin" style="margin:0">Stop when this run wins</label><div class="field"><span class="cs">$</span><input id="awin" type="number" inputmode="decimal" min="0" step="1" value="25"></div></div>
+              <div class="arow"><label class="lab" for="aloss" style="margin:0">Stop when this run loses</label><div class="field"><span class="cs">$</span><input id="aloss" type="number" inputmode="decimal" enterkeyhint="done" min="0" step="1" value="25"></div></div>
+              <div class="arow"><label class="lab" for="awin" style="margin:0">Stop when this run wins</label><div class="field"><span class="cs">$</span><input id="awin" type="number" inputmode="decimal" enterkeyhint="done" min="0" step="1" value="25"></div></div>
               <p class="note" style="margin-top:8px">Type 0 if you do not want a stop rule.</p>
             </details>
           </div>
@@ -374,7 +374,7 @@ html{overflow:hidden;overscroll-behavior:none}
         <button class="btn inkb" id="pkin" type="button">Sign in with a passkey</button>
         <div class="or">or receive a code by email</div>
       </div>
-      <form id="ef"><div id="nmrow"><label class="lab" for="aname">First name or nickname</label><input class="inp" id="aname" type="text" autocomplete="nickname" maxlength="30" spellcheck="false"></div><label class="lab" for="aemail">Email</label><input class="inp" id="aemail" type="email" autocomplete="email" inputmode="email" required placeholder="you@example.com"><div class="stk" id="stk1"></div><button class="btn sun" type="submit" id="efb">Create account</button></form>
+      <form id="ef"><div id="nmrow"><label class="lab" for="aname">First name or nickname</label><input class="inp" id="aname" type="text" autocomplete="given-name" autocapitalize="words" autocorrect="off" maxlength="30" spellcheck="false"></div><label class="lab" for="aemail">Email</label><input class="inp" id="aemail" type="email" autocomplete="email" inputmode="email" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go" required placeholder="you@example.com"><div class="stk" id="stk1"></div><button class="btn sun" type="submit" id="efb">Create account</button></form>
       <p class="msg" role="status"></p>
       <details class="pv"><summary>About your account</summary><p>You use your email to sign in. The game keeps your name, balance and cash-out history in your account. You can see them on all your devices. The owner of this site can also see them. To delete your account, open Account.</p></details>
     </div>
@@ -382,7 +382,7 @@ html{overflow:hidden;overscroll-behavior:none}
       <h2 id="nmh">What is your name?</h2>
       <p class="who"><span>You are signed in as</span><b id="nmem"></b></p>
       <p>Type your first name or a nickname. Only the owner of this site can see it.</p>
-      <form id="nf"><label class="lab" for="nname">First name or nickname</label><input class="inp" id="nname" type="text" autocomplete="nickname" maxlength="30" spellcheck="false" required><button class="btn sun" type="submit">Save</button></form>
+      <form id="nf"><label class="lab" for="nname">First name or nickname</label><input class="inp" id="nname" type="text" autocomplete="given-name" autocapitalize="words" autocorrect="off" enterkeyhint="done" maxlength="30" spellcheck="false" required><button class="btn sun" type="submit">Save</button></form>
       <p class="msg" role="status"></p>
       <button class="link" type="button" id="nmout">Not this account? Sign out</button>
     </div>
@@ -397,7 +397,7 @@ html{overflow:hidden;overscroll-behavior:none}
     <div data-step="code" hidden>
       <h2 id="codeh">Check your email</h2>
       <p id="codeto">Type the 6-digit code that we sent to you. You can use the code for 10 minutes.</p>
-      <form id="cf"><input class="inp code" id="acode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required aria-label="6-digit code"><button class="btn sun" type="submit">Sign in</button></form>
+      <form id="cf"><input class="inp code" id="acode" inputmode="numeric" autocomplete="one-time-code" enterkeyhint="go" maxlength="6" pattern="[0-9]{6}" required aria-label="6-digit code"><button class="btn sun" type="submit">Sign in</button></form>
       <p class="msg" role="status"></p>
       <button class="link" type="button" id="cback">Use a different email</button>
     </div>
@@ -885,7 +885,7 @@ const hasHist=()=>S.log.length>0||S.buyins>0;
 /* the buy-in question: 4 tiles in one currency, a field for a different amount, and a quiet link to the other currency */
 function picker(el){
   const st={cur:CUR,amt:0,lock:false};
-  el.innerHTML=`<span class="lab" id="${el.id}q">How much does a good evening out cost you?</span><div class="seg" role="group" aria-labelledby="${el.id}q"></div><div class="field"><span class="cs"></span><input type="text" inputmode="numeric" autocomplete="off" maxlength="6" placeholder="A different amount" aria-label="A different amount"></div><div class="stkf"><span>This amount is your buy-in.</span><button class="link" type="button"></button></div>`;
+  el.innerHTML=`<span class="lab" id="${el.id}q">How much does a good evening out cost you?</span><div class="seg" role="group" aria-labelledby="${el.id}q"></div><div class="field"><span class="cs"></span><input type="text" inputmode="numeric" autocomplete="off" enterkeyhint="done" maxlength="6" placeholder="A different amount" aria-label="A different amount"></div><div class="stkf"><span>This amount is your buy-in.</span><button class="link" type="button"></button></div>`;
   const tiles=el.querySelector('.seg'),inp=el.querySelector('input'),sw=el.querySelector('.link');
   const show=()=>{const c=CURS[st.cur];
     tiles.innerHTML=c.tiles.map(v=>`<button type="button" data-v="${v}" aria-pressed="${!inp.value&&v===st.amt}">${whole(v,st.cur)}</button>`).join('');
