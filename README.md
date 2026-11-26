@@ -47,9 +47,10 @@ This serves the full app at http://localhost:3000 with an in-memory database and
 
 ## The fall of a ball
 
-- The result of a ball is fixed at the moment of the drop: one 50/50 choice for each row. The fall is only a picture of that result. It does not change the odds.
-- The ball falls with gravity and bounces on the pegs. The code makes a number of falls and uses the first one that ends in the slot of the result (`fall` in `index.html`).
-- If the code finds no such fall, the ball goes from peg to peg on a fixed path.
+- The path of a ball is fixed at the moment of the drop: one 50/50 choice for each row. The fall is only a picture of that path. It does not change the odds.
+- The ball makes one bounce on each peg of its path. It lands a little to the left or to the right of the top of the peg and leaves the peg to that side.
+- Each hop to the next peg is a true flight. The side speed does not change in the air, and gravity makes the curve. Each hop has its own height and its own time (`HOP` and `makeBall` in `index.html`).
+- Nothing turns the ball in the air and no bounce goes against the peg. A first version used ball physics with a search and a push toward the slot. It let a ball bounce on one peg for more than a second and turned some bounces around, so it looked fixed. It was removed.
 
 ## Sound and music
 
