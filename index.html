@@ -151,12 +151,14 @@ html.lock{overflow:hidden}
 .arow .field{width:120px;flex:none}
 .auth form{margin:0}
 .auth p{margin:0 0 12px}
+/* the rule above wins over the margin of .msg and of .priv. Their space above comes from here, so that they do not touch the button above */
+.auth .msg{margin-top:8px}.auth .priv{margin-top:14px}
 .auth .inp{width:100%;min-height:50px;border:2px solid var(--line);border-radius:12px;padding:0 14px;font:600 16px Rubik,sans-serif;color:var(--ink);background:#fff;margin-bottom:8px}
 .auth .inp:focus{border-color:var(--ink);outline:none}
 .auth .code{letter-spacing:.35em;text-indent:.35em;font-size:24px;text-align:center}
 .or{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:13px;margin:14px 0}
 .or::before,.or::after{content:"";flex:1;border-top:1px solid var(--line)}
-.priv{font-size:13px;color:var(--muted);margin:14px 0 0}
+.priv{font-size:13px;color:var(--muted)}
 /* one line for a computer and one line for a phone or a tablet: the finger as the pointer shows the second one */
 .tcw{display:none}@media(pointer:coarse){.pcw{display:none}.tcw{display:block}}
 #authv.gate{--dim:rgba(40,0,6,.28)}
