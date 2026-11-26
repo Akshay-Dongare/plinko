@@ -45,6 +45,12 @@ This serves the full app at http://localhost:3000 with an in-memory database and
 - Safari cannot tell the height of the status bar of the installed app, so `startPic` has a small table of iPhone screen heights. A screen that is not in the table gets a usual value, and the shapes can be some points off.
 - Android makes its own start-up screen from `manifest.webmanifest`.
 
+## To clear the game data of all players
+
+- `DATA_V` in `lib/state.js` is the data version. Each save holds the version that wrote it.
+- If you raise `DATA_V`, the server replaces each older save with an empty game when it next reads that save. Balance, sessions and history go. The account and the two sound settings stay.
+- This cannot be undone. Version 2 started on 25 November 2026 and version 3 on 26 November 2026.
+
 ## The fall of a ball
 
 - The path of a ball is fixed at the moment of the drop: one 50/50 choice for each row. The fall is only a picture of that path. It does not change the odds.
