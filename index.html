@@ -564,7 +564,7 @@ function musStart(){
   if(MUS.on||!ac||ac.state!=='running'||!S.music||document.hidden||gated)return;   // not running: the browser did not let the sound start yet
   if(!MUS.noise){MUS.noise=ac.createBuffer(1,ac.sampleRate,ac.sampleRate);const d=MUS.noise.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1}
   const bus=MUS.bus=ac.createGain(),echo=MUS.echo=ac.createDelay(1),fb=ac.createGain(),wet=ac.createGain();
-  bus.gain.value=.28;echo.delayTime.value=.388;fb.gain.value=.32;wet.gain.value=.5;echo.connect(fb);fb.connect(echo);echo.connect(wet);wet.connect(bus);bus.connect(master);
+  bus.gain.value=.07;echo.delayTime.value=.388;fb.gain.value=.32;wet.gain.value=.5;echo.connect(fb);fb.connect(echo);echo.connect(wet);wet.connect(bus);bus.connect(master);
   // if the page was too busy to make a bar in time, start the next bar from now
   const tick=()=>{try{if(MUS.t<ac.currentTime)MUS.t=ac.currentTime+.05;while(MUS.t<ac.currentTime+.35){musBar(MUS.t,MUS.bar);MUS.bar=(MUS.bar+1)%8;MUS.t+=BAR}}catch(e){musStop()}};
   MUS.on=true;MUS.t=ac.currentTime+.08;MUS.bar=0;tick();MUS.timer=setInterval(tick,100);

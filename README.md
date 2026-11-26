@@ -54,6 +54,7 @@ This serves the full app at http://localhost:3000 with an in-memory database and
 - A browser lets sound start only after a touch, a click or a key. So the music starts with the first one after the game shows, at any place on the page. This is also true after a reload. A browser that lets sound start with no touch plays the music at once.
 - If the music is on but silent (after a reload, or after iOS stops the sound), a push on the note button starts it. That push does not turn the music off.
 - The music stops when the note button is off, when the page is hidden and on the sign-in card.
+- The music is quiet. Its average level is 6 dB below the ball sounds, and its peaks are 15 dB below. The value is `bus.gain` in `musStart`.
 - A save from before the music has no music setting. If that player had the sound off, the music is off too.
 
 ## Buy-in and currency
