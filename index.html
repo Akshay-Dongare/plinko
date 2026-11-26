@@ -1160,6 +1160,30 @@ if(vv){
   fitCards();
 }
 
+/* start-up picture of the installed app on iOS: the game screen with nothing in it. iOS takes the picture when the player adds the app
+   to the Home Screen, and shows it at each start until the page is ready. The page draws it for this screen: there are no picture files. */
+let picT=0;
+function startPic(){
+  if(!('standalone' in navigator)||navigator.standalone||!matchMedia('(max-width:900px) and (min-height:540px) and (orientation:portrait)').matches)return;
+  try{
+    const W=screen.width,H=screen.height,k=devicePixelRatio||1,c=document.createElement('canvas'),g=c.getContext('2d');
+    const css=e=>getComputedStyle(e),col=n=>css(document.documentElement).getPropertyValue(n).trim(),R=e=>e.getBoundingClientRect(),rad=e=>parseFloat(css(e).borderTopLeftRadius);
+    // the installed app has no browser bars. Safari cannot tell the height of its status bar (T) and of its home bar (B): they come from the screen height
+    const T={667:20,736:20,812:47,844:47,852:59,874:62,896:48,926:47,932:59,956:62}[H]||(H>=1000?24:H>850?59:47),B=H>=1000?20:T>20?34:0,P=H-T;
+    const cabE=document.querySelector('.cab'),con=document.querySelector('.con'),footE=document.querySelector('.foot'),cb=R(cabE),fg=R(fig),ft=R(footE);
+    const fh=Math.max(200,Math.min(.92*W,P-380-Math.max(14,B),.64*P)),d=fh-fg.height;   // the board height without browser bars: the same rule as .fig in the phone layout
+    const rr=(x,y,w,h,r,f)=>{g.beginPath();g.roundRect(x,y,w,h,r);g.fillStyle=f;g.fill()};
+    c.width=Math.round(W*k);c.height=Math.round(H*k);g.scale(k,k);
+    g.fillStyle=col('--set2');g.fillRect(0,0,W,H);g.translate(0,T);
+    g.save();g.translate(.25*W,0);g.scale(1.2*W,.9*P);const bg=g.createRadialGradient(0,0,0,0,0,1);bg.addColorStop(0,'#ec3b3f');bg.addColorStop(.45,col('--set'));bg.addColorStop(1,'#b31923');g.fillStyle=bg;g.fillRect(-1,0,3,2);g.restore();
+    rr(cb.left,cb.top+10,cb.width,cb.height+d,rad(cabE),'rgba(80,0,8,.25)');rr(cb.left,cb.top,cb.width,cb.height+d,rad(cabE),col('--set2'));
+    const bd=g.createLinearGradient(0,fg.top,0,fg.top+fh);bd.addColorStop(0,'#fff');bd.addColorStop(1,'#f5efe6');rr(fg.left,fg.top,fg.width,fh,rad(fig),'#efe5d6');rr(fg.left+3,fg.top+3,fg.width-6,fh-6,rad(fig)-3,bd);
+    for(const p of con.querySelectorAll(':scope>.panel')){const r=R(p),y=r.top+con.scrollTop+d;rr(r.left,y+6,r.width,r.height,rad(p),'rgba(80,0,8,.22)');rr(r.left,y,r.width,r.height,rad(p),'#fff')}
+    const bh=ft.height-parseFloat(css(footE).paddingBottom)+Math.max(14,B);g.shadowColor='rgba(40,0,6,.28)';g.shadowBlur=24*k;g.shadowOffsetY=-10*k;rr(0,P-bh,W,bh+40,[20,20,0,0],'#fff');
+    let l=document.querySelector('link[rel="apple-touch-startup-image"]');if(!l){l=document.createElement('link');l.rel='apple-touch-startup-image';document.head.appendChild(l)}
+    l.href=c.toDataURL('image/png');
+  }catch(e){}
+}
 function start(data){
   let saved=data&&typeof data==='object'&&'balance' in data?data:null;
   if(!saved){try{saved=JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){saved=null}}
@@ -1171,6 +1195,7 @@ function start(data){
   if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>draw());
   try{if(/^https?:$/.test(location.protocol)&&localStorage.getItem('plinko-gate')==='1'&&!localStorage.getItem('plinko-sync'))setGate(true)}catch(e){}
   initAccount();
+  picT=setTimeout(startPic,800);addEventListener('resize',()=>{clearTimeout(picT);picT=setTimeout(startPic,800)});
 }
 window.claude?.hot?.ready?window.claude.hot.ready(start):start(window.claude?.hot?.data??{});
 }

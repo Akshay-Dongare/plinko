@@ -36,6 +36,15 @@ This serves the full app at http://localhost:3000 with an in-memory database and
 | `RESEND_API_KEY` | Resend key for sending sign-in codes from `plinko@akshaydongare.com`. |
 | `ADMIN_EMAILS` | Comma-separated emails that can open `/admin`. |
 
+## Start-up picture on iPhone
+
+- An iPhone shows a start-up picture from the push on the Home Screen icon until the page is ready. Without one, the screen is white.
+- The picture is the game screen with nothing in it: the red background, the cabinet, the board, the cards and the drop bar.
+- There are no picture files. `startPic` in `index.html` draws the picture in Safari for the screen of that phone, and iOS takes it when the player adds the app to the Home Screen.
+- A copy of the app that is already on a Home Screen has no picture. Remove that copy and add the app again to get one.
+- Safari cannot tell the height of the status bar of the installed app, so `startPic` has a small table of iPhone screen heights. A screen that is not in the table gets a usual value, and the shapes can be some points off.
+- Android makes its own start-up screen from `manifest.webmanifest`.
+
 ## Sound and music
 
 - All sound is made in the browser with Web Audio. There are no sound files.
