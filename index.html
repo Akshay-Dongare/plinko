@@ -255,6 +255,8 @@ html{overflow:hidden;overscroll-behavior:none}
 .foot .btn{flex:1 1 190px;width:auto}
 .foot .cost{flex-basis:100%;margin:0}
 }
+/* installed app on iOS: after the keyboard closes, 100% and dvh stay short by the height of the status bar. lvh does not */
+@media(max-width:900px) and (min-height:540px) and (display-mode:standalone){html,body,.app{height:100lvh}}
 @media(prefers-reduced-motion:reduce){.recent .chip.pop{animation:none}.bulbs.flash i{animation:none}.sq{transition:none}.ticket{animation:none}}
 </style>
 </head>
