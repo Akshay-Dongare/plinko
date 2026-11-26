@@ -185,7 +185,7 @@ html.lock{overflow:hidden}
 .auth .stkf .link[hidden]{display:none}
 #authv.must .xbtn{display:none}
 .auth{position:relative}
-.auth h2{padding-right:44px}
+.auth h2{padding-right:44px}.nb{white-space:nowrap}
 .xbtn{position:absolute;top:12px;right:12px;width:44px;height:44px;border:0;border-radius:50%;background:var(--soft);color:var(--ink);display:grid;place-items:center;cursor:pointer}
 .xbtn:hover{background:var(--line)}
 .xbtn:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
@@ -394,7 +394,7 @@ html{overflow:hidden;overscroll-behavior:none}
       <button class="link" type="button" id="nmout">Not this account? Sign out</button>
     </div>
     <div data-step="stake" hidden>
-      <h2 id="skh">Set your buy-in</h2>
+      <h2 id="skh">Set your <span class="nb">buy-in</span></h2>
       <p class="who" id="skwho"><span>You are signed in as</span><b id="skem"></b></p>
       <div class="stk" id="stk2"></div>
       <button class="btn sun" type="button" id="sksave">Save</button>
@@ -1042,7 +1042,8 @@ function onboard(){
   if(offerPk&&PK&&!me.passkeys){offerPk=false;return step('passkey')}
   offerPk=false;if(!$('authv').hidden)closeAuth();
 }
-function askStake(){needStake=true;$('authv').classList.add('must');$('skh').textContent='Set your buy-in';$('skwho').hidden=false;$('skem').textContent=me.email;$('skout').hidden=false;P2.set(me.cur||(hasHist()?'USD':guessCur()),0,hasHist());step('stake')}
+const skh=verb=>{$('skh').innerHTML=verb+' your <span class="nb">buy-in</span>'};   // "buy-in" does not break at its hyphen
+function askStake(){needStake=true;$('authv').classList.add('must');skh('Set');$('skwho').hidden=false;$('skem').textContent=me.email;$('skout').hidden=false;P2.set(me.cur||(hasHist()?'USD':guessCur()),0,hasHist());step('stake')}
 $('sksave').onclick=async e=>{
   const s=P2.get();if(s.err){amsg(s.err);return}
   const btn=e.currentTarget;busy(btn,true,'Wait…');const r=await api('/api/auth?op=set-stake',{method:'POST',body:{cur:s.cur,buyin:s.amt}});busy(btn,false);
@@ -1054,7 +1055,7 @@ $('sksave').onclick=async e=>{
 $('skout').onclick=()=>$('aout').click();
 $('astk').onclick=()=>{
   if(S.buyins>0){amsg('Cash out first. Then you can change your buy-in.');return}
-  $('skh').textContent='Change your buy-in';$('skwho').hidden=true;$('skout').hidden=true;P2.set(me.cur||CUR,me.buyin,hasHist());step('stake');
+  skh('Change');$('skwho').hidden=true;$('skout').hidden=true;P2.set(me.cur||CUR,me.buyin,hasHist());step('stake');
 };
 function askName(){needName=true;$('authv').classList.add('must');$('nmh').textContent='What is your name?';$('nname').value='';$('nmem').textContent=me.email;$('nmout').hidden=false;step('name')}
 $('nf').onsubmit=async e=>{
