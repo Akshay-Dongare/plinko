@@ -516,7 +516,7 @@ function save(){saveLocal();if(me){dirty=true;meta({owner:me.email,rev,dirty:tru
 /* sound: a marimba-like mallet on a G major pentatonic scale, so overlapping hits stay in tune.
    Losses thud, small wins tick, bigger multipliers climb the scale, 10x+ plays an arpeggio, the top slot a fanfare. */
 let ac=null,master=null,lastTick=0,landWin=[];
-function audio(){if(S.muted&&!S.music)return;try{if(!ac){ac=new(window.AudioContext||window.webkitAudioContext)();const c=ac.createDynamicsCompressor();c.threshold.value=-18;c.ratio.value=6;master=ac.createGain();master.gain.value=.8;master.connect(c);c.connect(ac.destination)}if(ac.state!=='running')ac.resume().catch(()=>{})}catch(e){ac=null}try{musStart()}catch(e){}}
+function audio(){if(S.muted&&!S.music)return;try{if(!ac){ac=new(window.AudioContext||window.webkitAudioContext)();const c=ac.createDynamicsCompressor();c.threshold.value=-18;c.ratio.value=6;master=ac.createGain();master.gain.value=.8;master.connect(c);c.connect(ac.destination)}if(ac.state!=='running')ac.resume().then(()=>{try{musStart()}catch(e){}}).catch(()=>{})}catch(e){ac=null}try{musStart()}catch(e){}}
 function tone(f,t,d,v,type,bend){if(!ac||S.muted)return;try{const o=ac.createOscillator(),g=ac.createGain();o.type=type||'sine';o.frequency.setValueAtTime(f,t);if(bend)o.frequency.exponentialRampToValueAtTime(f*bend,t+d);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(v,t+.006);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(master);o.start(t);o.stop(t+d+.03)}catch(e){}}
 const note=k=>392*2**(([0,2,4,7,9][k%5]+12*Math.floor(k/5))/12);
 function mallet(f,t,v,d){tone(f,t,d,v);tone(f*2,t,d*.45,v*.3);tone(f*3,t,d*.2,v*.1,'triangle')}
@@ -561,7 +561,7 @@ function musBar(t,b){
   if(b===3||b===7)[91,93,95,98,103].forEach((m,i)=>mbell(m,t+3*q+i*.055,.45,.02));   // a short run of high bells
 }
 function musStart(){
-  if(MUS.on||!ac||!S.music||document.hidden||gated)return;
+  if(MUS.on||!ac||ac.state!=='running'||!S.music||document.hidden||gated)return;   // not running: the browser did not let the sound start yet
   if(!MUS.noise){MUS.noise=ac.createBuffer(1,ac.sampleRate,ac.sampleRate);const d=MUS.noise.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1}
   const bus=MUS.bus=ac.createGain(),echo=MUS.echo=ac.createDelay(1),fb=ac.createGain(),wet=ac.createGain();
   bus.gain.value=.28;echo.delayTime.value=.388;fb.gain.value=.32;wet.gain.value=.5;echo.connect(fb);fb.connect(echo);echo.connect(wet);wet.connect(bus);bus.connect(master);
@@ -907,7 +907,7 @@ $('go').onclick=e=>{if(e.detail>0&&ptrDown){ptrDown=false;return}press()};
 $('go').addEventListener('contextmenu',e=>e.preventDefault());
 for(const ev of ['pointerup','pointercancel'])addEventListener(ev,()=>{if(holding==='ptr')holdStop()});
 addEventListener('blur',holdStop);
-document.addEventListener('visibilitychange',()=>{if(document.hidden){holdStop();musStop()}else try{musStart()}catch(e){}});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){holdStop();musStop()}else if(!gated)audio()});
 for(const b of document.querySelectorAll('.tabs [role=tab]'))b.onclick=()=>setTab(b.dataset.t);
 document.querySelector('.tabs').onkeydown=e=>{if(e.key!=='ArrowRight'&&e.key!=='ArrowLeft')return;const T=['manual','auto','stats'],i=(T.indexOf(S.tab)+(e.key==='ArrowRight'?1:2))%3;setTab(T[i]);$('tab-'+T[i]).focus()};
 $('riskS').onchange=e=>{S.risk=e.target.value;save();draw();ui()};
@@ -919,7 +919,11 @@ $('bet').onchange=e=>setBet(parseFloat(e.target.value));
 $('half').onclick=()=>setBet(S.bet/2);
 $('dbl').onclick=()=>setBet(S.buyins&&S.balance>=minBet()?Math.min(S.bet*2,S.balance):S.bet*2);
 $('snd').onclick=()=>{S.muted=!S.muted;if(!S.muted)audio();save();ui()};
-$('mus').onclick=()=>{S.music=!S.music;if(S.music)audio();else musStop();save();ui()};
+/* A browser lets sound start only after a touch, a click or a key. After a reload the music is on but silent until then.
+   The first one at any place on the page starts it. A push on the note button then starts the music and does not turn it off */
+$('mus').onclick=()=>{if(S.music&&!MUS.on&&!gated){audio();if(ac)return}S.music=!S.music;if(S.music)audio();else musStop();save();ui()};
+const wake=e=>{if(!S.music||gated||MUS.on||(e.target&&e.target.closest&&e.target.closest('#mus')))return;audio()};
+for(const t of['pointerup','touchend','click','keydown'])addEventListener(t,wake,{capture:true,passive:true});
 document.addEventListener('keydown',e=>{
   if(!$('authv').hidden){if(e.key==='Escape')closeAuth();return}
   if(!$('sq').hidden){if(e.key==='Escape')closeSq();return}
@@ -1206,6 +1210,7 @@ function start(data){
   if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>draw());
   try{if(/^https?:$/.test(location.protocol)&&localStorage.getItem('plinko-gate')==='1'&&!localStorage.getItem('plinko-sync'))setGate(true)}catch(e){}
   initAccount();
+  try{if(localStorage.getItem('plinko-sync')&&!gated)audio()}catch(e){}   // signed in: a browser that lets sound start with no touch plays the music at once
   picT=setTimeout(startPic,800);addEventListener('resize',()=>{clearTimeout(picT);picT=setTimeout(startPic,800)});
 }
 window.claude?.hot?.ready?window.claude.hot.ready(start):start(window.claude?.hot?.data??{});
