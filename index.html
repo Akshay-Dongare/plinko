@@ -1025,13 +1025,17 @@ $('acct').onclick=()=>me?step('acct'):step('email');
 for(const b of document.querySelectorAll('#amodes button'))b.onclick=()=>setMode(b.dataset.m);
 for(const b of document.querySelectorAll('#authv [data-close]'))b.onclick=closeAuth;
 $('authv').onclick=e=>{if(e.target.id==='authv')closeAuth()};
+// a phone opens its keyboard only for a focus that comes from a touch. This unseen field takes the focus during the touch,
+// and the keyboard stays open when the focus moves to the code field after the request
+function holdKb(){const i=document.createElement('input');i.inputMode='numeric';i.tabIndex=-1;i.setAttribute('aria-hidden','true');i.style.cssText='position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;border:0;padding:0;font-size:16px;pointer-events:none';document.body.appendChild(i);i.focus({preventScroll:true});return()=>i.remove()}
 $('ef').onsubmit=async e=>{
   e.preventDefault();const btn=e.target.querySelector('.btn');authEmail=$('aemail').value.trim().toLowerCase();authName=amode==='up'?$('aname').value.trim():'';
   if(amode==='up'&&!authName){amsg('Type your first name or a nickname.');$('aname').focus();return}
   authStake=null;if(amode==='up'){const k=P1.get();if(k.err){amsg(k.err);return}authStake=k}
+  const was=document.activeElement,kb=holdKb();
   busy(btn,true,'Wait…');const r=await api('/api/auth?op=email-start',{method:'POST',body:{email:authEmail}});busy(btn,false);
-  if(!r.ok){amsg(r.error||'We could not send the code.');return}
-  step('code');$('codeh').textContent=amode==='up'?'Confirm your email':'Check your email';$('codeto').textContent=`Type the 6-digit code that we sent to ${authEmail}. You can use the code for 10 minutes.`;$('acode').value='';
+  if(!r.ok){if(was&&was.focus)was.focus();kb();amsg(r.error||'We could not send the code.');return}
+  step('code');kb();$('codeh').textContent=amode==='up'?'Confirm your email':'Check your email';$('codeto').textContent=`Type the 6-digit code that we sent to ${authEmail}. You can use the code for 10 minutes.`;$('acode').value='';
 };
 $('cf').onsubmit=async e=>{
   e.preventDefault();const btn=e.target.querySelector('.btn');
