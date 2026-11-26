@@ -36,6 +36,13 @@ This serves the full app at http://localhost:3000 with an in-memory database and
 | `RESEND_API_KEY` | Resend key for sending sign-in codes from `plinko@akshaydongare.com`. |
 | `ADMIN_EMAILS` | Comma-separated emails that can open `/admin`. |
 
+## Sound and music
+
+- All sound is made in the browser with Web Audio. There are no sound files.
+- The win sounds are a mallet on a G major pentatonic scale, so that hits at the same time stay in tune.
+- The music is one loop of 8 bars in G major ("Casino floor"): bells that go up and down on a soft pad, with a slow pulse. It is in `index.html`, below the win sounds.
+- The music starts with the first sound of a session, for example the buy-in. It stops when the sound is off, when the page is hidden and on the sign-in card.
+
 ## Buy-in and currency
 
 - Sign-up asks one question: "How much does a good evening out cost you?" The answer is the player's buy-in. There are 4 tiles and a field for a different amount.

@@ -500,7 +500,7 @@ function save(){saveLocal();if(me){dirty=true;meta({owner:me.email,rev,dirty:tru
 /* sound: a marimba-like mallet on a G major pentatonic scale, so overlapping hits stay in tune.
    Losses thud, small wins tick, bigger multipliers climb the scale, 10x+ plays an arpeggio, the top slot a fanfare. */
 let ac=null,master=null,lastTick=0,landWin=[];
-function audio(){if(S.muted)return;try{if(!ac){ac=new(window.AudioContext||window.webkitAudioContext)();const c=ac.createDynamicsCompressor();c.threshold.value=-18;c.ratio.value=6;master=ac.createGain();master.gain.value=.8;master.connect(c);c.connect(ac.destination)}if(ac.state!=='running')ac.resume().catch(()=>{})}catch(e){ac=null}}
+function audio(){if(S.muted)return;try{if(!ac){ac=new(window.AudioContext||window.webkitAudioContext)();const c=ac.createDynamicsCompressor();c.threshold.value=-18;c.ratio.value=6;master=ac.createGain();master.gain.value=.8;master.connect(c);c.connect(ac.destination)}if(ac.state!=='running')ac.resume().catch(()=>{})}catch(e){ac=null}try{musStart()}catch(e){}}
 function tone(f,t,d,v,type,bend){if(!ac||S.muted)return;try{const o=ac.createOscillator(),g=ac.createGain();o.type=type||'sine';o.frequency.setValueAtTime(f,t);if(bend)o.frequency.exponentialRampToValueAtTime(f*bend,t+d);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(v,t+.006);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(master);o.start(t);o.stop(t+d+.03)}catch(e){}}
 const note=k=>392*2**(([0,2,4,7,9][k%5]+12*Math.floor(k/5))/12);
 function mallet(f,t,v,d){tone(f,t,d,v);tone(f*2,t,d*.45,v*.3);tone(f*3,t,d*.2,v*.1,'triangle')}
@@ -519,6 +519,44 @@ function landSound(m,top){
 }
 function coinSound(){if(!ac)return;const t=ac.currentTime;mallet(note(10),t,.06,.18);mallet(note(12),t+.07,.06,.3)}
 function cashSound(up){if(!ac)return;const t=ac.currentTime;(up?[5,7,10]:[6,3]).forEach((k,i)=>mallet(note(k),t+i*.1,.07,.4))}
+/* music: one loop of 8 bars in G major, the key of the win sounds. Bells go up and down on a soft pad, with a slow pulse.
+   The loop is made from oscillators, one bar at a time, a little before the bar sounds. There are no sound files. */
+const MUS={on:false,t:0,bar:0,timer:0,bus:null,echo:null,noise:null},BAR=240/116;
+const ARP=[[67,71,74,76,79,76,74,71],[69,71,74,79,81,79,74,71],[64,67,71,74,76,74,71,67],[67,71,74,76,79,76,74,71],[64,67,72,74,76,74,72,67],[64,67,72,76,79,76,72,67],[62,66,69,74,76,74,69,66],[66,69,74,78,81,78,74,69]];
+const PAD=[[55,62,69,71],[52,59,62,67],[48,55,62,64],[50,57,62,66]],ROOT=[43,40,48,50];
+// one note of the music; m is a MIDI note number. The gain is 0 before the note: a source that starts one sample early makes a click
+function mnote(type,m,t,d,v,o={}){
+  const os=ac.createOscillator(),g=ac.createGain(),a=o.a||.005;os.type=type;os.frequency.setValueAtTime(440*2**((m-69)/12),t);if(o.det)os.detune.value=o.det;
+  g.gain.value=0;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(v,t+a);if(o.r)g.gain.setValueAtTime(v,Math.max(t+a,t+d-o.r));g.gain.exponentialRampToValueAtTime(.0001,t+d);
+  let n=os;if(o.lp){n=ac.createBiquadFilter();n.frequency.value=o.lp;os.connect(n)}
+  n.connect(g);g.connect(MUS.bus);if(o.echo)g.connect(MUS.echo);os.start(t);os.stop(t+d+.05);
+}
+function mbell(m,t,d,v){mnote('sine',m,t,d,v,{echo:1});mnote('sine',m+12,t,d*.45,v*.3,{echo:1});mnote('triangle',m+19,t,d*.2,v*.1)}
+function mhit(src,t,d,v){const g=ac.createGain();g.gain.value=0;g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);src.connect(g);g.connect(MUS.bus)}
+function musBar(t,b){
+  const q=BAR/4,c=b>>1;
+  ARP[b].forEach((m,i)=>mbell(m,t+i*q/2,.8,i%2?.055:.08));
+  if(b%2===0){   // pad and bass: one chord for two bars
+    for(const m of PAD[c])for(const det of[-7,7])mnote('sawtooth',m,t,q*8,.02,{a:.6,r:.9,lp:1500,det});
+    const o={a:.015,r:.09},v=.035;mnote('sine',ROOT[c],t,q*8,v*.45,o);mnote('sine',ROOT[c]+12,t,q*8,v*.8,o);mnote('sine',ROOT[c]+19,t,q*5.6,v*.35,{a:.015});
+  }
+  for(const i of[0,2]){const os=ac.createOscillator(),x=t+i*q;os.frequency.setValueAtTime(140,x);os.frequency.exponentialRampToValueAtTime(50,x+.1);mhit(os,x,.19,.07);os.start(x);os.stop(x+.22)}   // soft kick
+  for(let i=0;i<16;i++){const s=ac.createBufferSource(),f=ac.createBiquadFilter(),x=t+i*q/4;s.buffer=MUS.noise;f.type='highpass';f.frequency.value=7500;s.connect(f);mhit(f,x,.03,i%4===2?.04:.014);s.start(x,Math.random()*.5);s.stop(x+.05)}   // shaker
+  if(b===3||b===7)[91,93,95,98,103].forEach((m,i)=>mbell(m,t+3*q+i*.055,.45,.02));   // a short run of high bells
+}
+function musStart(){
+  if(MUS.on||!ac||S.muted||document.hidden||gated)return;
+  if(!MUS.noise){MUS.noise=ac.createBuffer(1,ac.sampleRate,ac.sampleRate);const d=MUS.noise.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1}
+  const bus=MUS.bus=ac.createGain(),echo=MUS.echo=ac.createDelay(1),fb=ac.createGain(),wet=ac.createGain();
+  bus.gain.value=.28;echo.delayTime.value=.388;fb.gain.value=.32;wet.gain.value=.5;echo.connect(fb);fb.connect(echo);echo.connect(wet);wet.connect(bus);bus.connect(master);
+  // if the page was too busy to make a bar in time, start the next bar from now
+  const tick=()=>{try{if(MUS.t<ac.currentTime)MUS.t=ac.currentTime+.05;while(MUS.t<ac.currentTime+.35){musBar(MUS.t,MUS.bar);MUS.bar=(MUS.bar+1)%8;MUS.t+=BAR}}catch(e){musStop()}};
+  MUS.on=true;MUS.t=ac.currentTime+.08;MUS.bar=0;tick();MUS.timer=setInterval(tick,100);
+}
+function musStop(){
+  if(!MUS.on)return;MUS.on=false;clearInterval(MUS.timer);
+  try{const b=MUS.bus,t=ac.currentTime;b.gain.setValueAtTime(b.gain.value,t);b.gain.linearRampToValueAtTime(0,t+.15);setTimeout(()=>b.disconnect(),400)}catch(e){}
+}
 
 /* board geometry and drawing */
 const fig=$('fig'),cv=$('cv'),ctx=cv.getContext('2d');
@@ -726,7 +764,7 @@ function ui(){
   $('msg').classList.toggle('hint',!started);
   $('msg').textContent=!started?`Buy in to receive ${whole(stake())} in chips.`:broke?'You have no chips. Re-buy to play again.':g.disabled&&!live?'Your bet is more than your balance.':'';
   renderRecent();
-  const sd=$('snd');sd.classList.toggle('off',S.muted);sd.setAttribute('aria-pressed',String(S.muted));sd.title=S.muted?'Unmute':'Mute';
+  const sd=$('snd');if(S.muted)musStop();sd.classList.toggle('off',S.muted);sd.setAttribute('aria-pressed',String(S.muted));sd.title=S.muted?'Unmute':'Mute';
 }
 let recentKey='';
 function renderRecent(){
@@ -852,7 +890,7 @@ $('go').onclick=e=>{if(e.detail>0&&ptrDown){ptrDown=false;return}press()};
 $('go').addEventListener('contextmenu',e=>e.preventDefault());
 for(const ev of ['pointerup','pointercancel'])addEventListener(ev,()=>{if(holding==='ptr')holdStop()});
 addEventListener('blur',holdStop);
-document.addEventListener('visibilitychange',()=>{if(document.hidden)holdStop()});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){holdStop();musStop()}else try{musStart()}catch(e){}});
 for(const b of document.querySelectorAll('.tabs [role=tab]'))b.onclick=()=>setTab(b.dataset.t);
 document.querySelector('.tabs').onkeydown=e=>{if(e.key!=='ArrowRight'&&e.key!=='ArrowLeft')return;const T=['manual','auto','stats'],i=(T.indexOf(S.tab)+(e.key==='ArrowRight'?1:2))%3;setTab(T[i]);$('tab-'+T[i]).focus()};
 $('riskS').onchange=e=>{S.risk=e.target.value;save();draw();ui()};
@@ -863,7 +901,7 @@ const setBet=v=>{v=Number.isFinite(v)?v:defBet(S.unit||stake());S.bet=Math.max(m
 $('bet').onchange=e=>setBet(parseFloat(e.target.value));
 $('half').onclick=()=>setBet(S.bet/2);
 $('dbl').onclick=()=>setBet(S.buyins&&S.balance>=minBet()?Math.min(S.bet*2,S.balance):S.bet*2);
-$('snd').onclick=()=>{S.muted=!S.muted;if(!S.muted)audio();save();ui()};
+$('snd').onclick=()=>{S.muted=!S.muted;if(S.muted)musStop();else audio();save();ui()};
 document.addEventListener('keydown',e=>{
   if(!$('authv').hidden){if(e.key==='Escape')closeAuth();return}
   if(!$('sq').hidden){if(e.key==='Escape')closeSq();return}
@@ -974,7 +1012,7 @@ function closeAuth(){if(gated||needName||needStake)return;$('authv').hidden=true
 /* sign-in gate: shown whenever accounts are available and nobody is signed in; the board plays demo balls behind it */
 function setGate(on){
   gated=on;$('authv').classList.toggle('gate',on);document.querySelector('.app').inert=on;
-  if(on){step('email');kick()}
+  if(on){musStop();step('email');kick()}
 }
 function loadSWA(){
   if(window.SimpleWebAuthnBrowser)return Promise.resolve();
