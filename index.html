@@ -500,7 +500,7 @@ function save(){saveLocal();if(me){dirty=true;meta({owner:me.email,rev,dirty:tru
 /* sound: a marimba-like mallet on a G major pentatonic scale, so overlapping hits stay in tune.
    Losses thud, small wins tick, bigger multipliers climb the scale, 10x+ plays an arpeggio, the top slot a fanfare. */
 let ac=null,master=null,lastTick=0,landWin=[];
-function audio(){if(S.muted)return;try{if(!ac){ac=new(window.AudioContext||window.webkitAudioContext)();const c=ac.createDynamicsCompressor();c.threshold.value=-18;c.ratio.value=6;master=ac.createGain();master.gain.value=.8;master.connect(c);c.connect(ac.destination)}if(ac.state==='suspended')ac.resume().catch(()=>{})}catch(e){ac=null}}
+function audio(){if(S.muted)return;try{if(!ac){ac=new(window.AudioContext||window.webkitAudioContext)();const c=ac.createDynamicsCompressor();c.threshold.value=-18;c.ratio.value=6;master=ac.createGain();master.gain.value=.8;master.connect(c);c.connect(ac.destination)}if(ac.state!=='running')ac.resume().catch(()=>{})}catch(e){ac=null}}
 function tone(f,t,d,v,type,bend){if(!ac||S.muted)return;try{const o=ac.createOscillator(),g=ac.createGain();o.type=type||'sine';o.frequency.setValueAtTime(f,t);if(bend)o.frequency.exponentialRampToValueAtTime(f*bend,t+d);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(v,t+.006);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(master);o.start(t);o.stop(t+d+.03)}catch(e){}}
 const note=k=>392*2**(([0,2,4,7,9][k%5]+12*Math.floor(k/5))/12);
 function mallet(f,t,v,d){tone(f,t,d,v);tone(f*2,t,d*.45,v*.3);tone(f*3,t,d*.2,v*.1,'triangle')}
