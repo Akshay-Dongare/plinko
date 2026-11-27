@@ -7,7 +7,7 @@ Live at https://plinko.akshaydongare.com
 
 | Path | What it does |
 |---|---|
-| `index.html` | The game. On the live site you must sign in, and your game is saved to your account. |
+| `index.html` | The game. On the live site a new visitor plays 10 balls as a guest. Then the player signs up, and the game is saved to the account. |
 | `og.png` | The picture that chat apps show with a link to the game. The `og:` tags in `index.html` point to it on the live site. |
 | `icon-maskable-512.png` | The home screen icon for Android. Android cuts this icon to a circle or to a different shape, so the board is smaller and stays in the middle. `manifest.webmanifest` points to it. |
 | `admin.html` | Players dashboard at `/admin`, only for the emails in `ADMIN_EMAILS`. |
@@ -81,6 +81,12 @@ This serves the full app at http://localhost:3000 with an in-memory database and
 
 ## How sign-in works
 
+- A new visitor plays at once: 10 balls as a guest, with no account. The drop button shows how many are left on a second line ("9 before sign-up"). After the 10th ball the sign-up card comes and cannot close.
+- No text says "free". The game never asks for money, and "free" makes a player expect a paid part later.
+- A visitor is a device that never signed in. A device that signed in before gets the sign-in card at once.
+- The count stays on the device in `localStorage` (`plinko-guest`). A person who clears the browser data, or uses a private window, gets 10 new balls. This is accepted.
+- The guest game goes into the new account. The currency stays the one of the guest game. It does not go into an account that uses another currency.
+- Visitors do not show on the admin page.
 - New players sign in with their email and a 6-digit code (expires in 10 minutes, 5 tries, 5 codes an hour).
 - A phone can load the page again when the player comes back from the mail app. The open code request (email, name, buy-in) stays on the device for 10 minutes in `localStorage` (`plinko-code`), so the card for the code comes back. A sign-in or "Use a different email" removes it.
 - After that they can add a passkey (Face ID, Touch ID, Windows Hello or a phone via QR) for one-tap sign-in.

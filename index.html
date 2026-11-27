@@ -214,6 +214,7 @@ html.lock{overflow:hidden}
 .go{background:#0d8048;color:#fff;box-shadow:inset 0 -4px 0 #075a31}
 #go{position:relative;display:grid;grid-template-columns:1fr auto minmax(max-content,1fr);align-items:center;column-gap:8px;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 #gol{grid-column:2}
+#gol small{display:block;font-size:12px;line-height:1.1}   /* guest balls left before sign-up: a second line, so the button keeps its width */
 /* a hold on the drop button does not scroll or zoom the page when the thumb moves */
 #go:not(:disabled){touch-action:none}
 @media(pointer:coarse){.app{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}.app input{-webkit-user-select:text;user-select:text}}
@@ -680,7 +681,7 @@ function loop(ts){
   draw();
   if(landed&&!gated){save();ui()}
   const busy=gated||AUTO.on||balls.length||flashes.length||floats.length||slotT.some(t=>t<.32);
-  if(busy)requestAnimationFrame(loop);else{running=false;ui();if(later){const st=later;later=null;adopt(st)}}
+  if(busy)requestAnimationFrame(loop);else{running=false;ui();guestSoon();if(later){const st=later;later=null;adopt(st)}}
 }
 function hit(r,j,demo){
   flashes.push({r,j,t:0});
@@ -714,7 +715,7 @@ const HOP={g:155,e:[.2,.4]};
 const AUTO={on:false,left:0,done:0,base:0,next:0,msg:''};
 const netNow=()=>r2(S.balance+balls.reduce((a,b)=>a+(b.done?0:b.stake),0)-S.boughtIn);
 function startAuto(){
-  if(AUTO.on||!S.buyins||S.bet>S.balance+1e-9)return;
+  if(AUTO.on||!S.buyins||S.bet>S.balance+1e-9||(guestPlay()&&!guestLeft()))return;
   audio();Object.assign(AUTO,{on:true,left:S.auto.n||Infinity,done:0,base:netNow(),next:0,msg:''});
   ui();kick();
 }
@@ -722,6 +723,7 @@ function stopAuto(msg){if(!AUTO.on)return;AUTO.on=false;AUTO.msg=msg||`Auto stop
 function autoTick(ts){
   if(!AUTO.on||ts<AUTO.next)return;
   if(S.bet>S.balance+1e-9){if(!balls.length)stopAuto('Auto stopped. Your balance is less than the bet.');return}
+  if(guestPlay()&&!guestLeft()){stopAuto('Auto stopped. Sign up to play more.');return}
   drop(1,true);AUTO.done++;AUTO.left--;AUTO.next=ts+(S.auto.fast?160:450);
   if(AUTO.left<=0)stopAuto(`Auto dropped all ${AUTO.done} balls.`);
 }
@@ -732,9 +734,11 @@ function autoCheck(b){
   else if(S.auto.win>0&&run>=S.auto.win)stopAuto(`Auto stopped. This run won ${money(run)}.`);
 }
 function drop(count,fromAuto){
+  if(guestPlay())count=Math.min(count,guestLeft());
   const cost=r2(S.bet*count);
-  if(!S.buyins||cost>S.balance+1e-9||(AUTO.on&&!fromAuto))return;
+  if(!count||!S.buyins||cost>S.balance+1e-9||(AUTO.on&&!fromAuto))return;
   audio();
+  if(visitor()){guestN+=count;try{localStorage.setItem('plinko-guest',guestN)}catch(e){}}
   S.balance=r2(S.balance-cost);S.wagered=r2(S.wagered+cost);
   for(let i=0;i<count;i++){const b=makeBall(i);S.pending=r2(S.pending+b.pay);S.exp=Math.round((S.exp+b.ev-b.stake)*1e4)/1e4;balls.push(b)}
   save();ui();kick();
@@ -748,6 +752,7 @@ function seg(id,vals,cur,lab,fn,lock){
 }
 function comb(n,k){let c=1;for(let i=1;i<=k;i++)c=c*(n-k+i)/i;return c}
 function rtp(n,risk){return TABLES[n][risk].reduce((a,m,k)=>a+comb(n,k)*m,0)/2**n*100}
+function guestLabel(el,text,left){const h=`${text}<small>${left} before sign-up</small>`;if(el._h!==h||!el.firstElementChild)el.innerHTML=el._h=h}
 function chipCol(m){return m>=10?['#c3127a','#fff']:m>=3?['#ff4f3b','#fff']:m>=1?['#ff9d2e','#1d1a33']:['#ffd23c','#1d1a33']}
 function ui(){
   const live=balls.length>0||AUTO.on,started=S.buyins>0;
@@ -778,14 +783,14 @@ function ui(){
   $('riskS').value=S.risk;$('rowsS').value=String(S.rows);$('riskS').disabled=$('rowsS').disabled=live;
   $('rtp').textContent=`The top slots pay ${fmtM(TABLES[S.rows][S.risk][0])}\u00d7. Approximately 1 ball in ${(2**(S.rows-1)).toLocaleString('en-US')} goes into a top slot. Over time, this board pays back ${rtp(S.rows,S.risk).toFixed(1)}% of all bets.`+(live?' You cannot change these settings while balls are on the board.':'');
   // the one big button
-  const g=$('go'),gl=$('gol'),auto=S.mode==='auto';let cost='';
+  const g=$('go'),gl=$('gol'),auto=S.mode==='auto',trial=guestPlay(),left=guestLeft(),spent=trial&&!left;let cost='';
   if(AUTO.on){gl.textContent=`Stop auto (${AUTO.done}${S.auto.n?' of '+S.auto.n:''})`;g.className='btn big stop';g.disabled=false;cost=`This run: ${AUTO.done} ball${AUTO.done===1?'':'s'}, net ${signed(netNow()-AUTO.base)}.`}
-  else if(auto){gl.textContent=S.auto.n?`Start auto: ${S.auto.n} balls`:'Start auto: no limit';g.className='btn big go';g.disabled=!started||S.bet>S.balance+1e-9;cost=AUTO.msg||`Each ball costs ${money(S.bet)}.`}
-  else{gl.textContent='Drop a ball';g.className='btn big sun';g.disabled=!started||S.bet>S.balance+1e-9;}
+  else if(auto){if(trial)guestLabel(gl,'Start auto',left);else gl.textContent=S.auto.n?`Start auto: ${S.auto.n} balls`:'Start auto: no limit';g.className='btn big go';g.disabled=!started||S.bet>S.balance+1e-9||spent;cost=AUTO.msg||`Each ball costs ${money(S.bet)}.`}
+  else{if(trial)guestLabel(gl,'Drop a ball',left);else gl.textContent='Drop a ball';g.className='btn big sun';g.disabled=!started||S.bet>S.balance+1e-9||spent;}
   g.classList.toggle('held',!!holding);
   $('cost').textContent=cost;
   $('msg').classList.toggle('hint',!started);
-  $('msg').textContent=!started?`Buy in to receive ${whole(stake())} in chips.`:broke?'You have no chips. Re-buy to play again.':g.disabled&&!live?'Your bet is more than your balance.':'';
+  $('msg').textContent=!started?`${trial?'Play money only. ':''}Buy in to receive ${whole(stake())} in chips.`:broke?'You have no chips. Re-buy to play again.':g.disabled&&!live&&!spent?'Your bet is more than your balance.':'';
   renderRecent();
   const mu=$('mus');if(!S.music)musStop();mu.classList.toggle('off',!S.music);mu.setAttribute('aria-pressed',String(S.music));mu.title=S.music?'Stop the music':'Start the music';
   const sd=$('snd');sd.classList.toggle('off',S.muted);sd.setAttribute('aria-pressed',String(S.muted));sd.title=S.muted?'Unmute':'Mute';
@@ -882,7 +887,7 @@ function closeSq(){
   const r=sqRect(),q=$('sq'),st=q.style;
   st.left=r.tile.left+'px';st.top=r.tile.top+'px';st.width=r.tile.width+'px';st.height=r.tile.height+'px';
   $('sqback').hidden=true;
-  setTimeout(()=>{q.hidden=true;$('htile').focus()},matchMedia('(prefers-reduced-motion: reduce)').matches?0:280);
+  setTimeout(()=>{q.hidden=true;$('htile').focus();guestSoon()},matchMedia('(prefers-reduced-motion: reduce)').matches?0:280);
 }
 $('htile').onclick=openSq;$('sqx').onclick=closeSq;$('sqback').onclick=closeSq;
 function cashOut(){
@@ -904,7 +909,7 @@ function cashOut(){
   cashSound(t.net>0);
   if(t.net>0){const e=$('bulbs');e.classList.remove('flash');void e.offsetWidth;e.classList.add('flash')}
 }
-const closeTicket=()=>{$('veil').hidden=true;$('buy').focus()};
+const closeTicket=()=>{$('veil').hidden=true;$('buy').focus();guestSoon()};
 $('cash').onclick=cashOut;
 $('close').onclick=closeTicket;
 $('again').onclick=()=>{closeTicket();$('buy').click()};
@@ -967,6 +972,7 @@ function picker(el){
   show();
   return{
     set(cur,amt,lock){st.cur=CURS[cur]?cur:'USD';st.lock=!!lock;const t=CURS[st.cur].tiles.includes(amt);st.amt=t?amt:0;inp.value=!t&&amt>0?String(amt):'';show()},
+    lock(cur){if(cur&&st.cur!==cur){st.cur=cur;st.amt=0;inp.value=''}st.lock=!!cur;show()},
     get(){const c=CURS[st.cur];
       if(inp.value){const n=parseInt(inp.value,10);return n>=c.min&&n<=c.max?{cur:st.cur,amt:n}:{err:`Type an amount from ${whole(c.min,st.cur)} to ${whole(c.max,st.cur)}.`}}
       return st.amt?{cur:st.cur,amt:st.amt}:{err:'Select an amount.'}}
@@ -978,7 +984,8 @@ function setMode(m){
   amode=m;amsg('');
   for(const b of document.querySelectorAll('#amodes button')){const on=b.dataset.m===m;b.setAttribute('aria-pressed',String(on))}
   $('auh').textContent=m==='up'?'Create your account':'Welcome back';
-  $('asub').textContent=m==='up'?'This game uses play money only. You do not pay real money.':PK?'Use your passkey, or receive a code by email.':'We send a sign-in code to your email.';   // a new visitor must see on the first card that no real money is asked
+  $('asub').textContent=m==='up'?(guestPlay()&&!guestLeft()?`You played ${GUEST_BALLS} balls. Sign up to play more. You never pay real money.`:'This game uses play money only. You do not pay real money.'):PK?'Use your passkey, or receive a code by email.':'We send a sign-in code to your email.';   // a new visitor must see on the first card that no real money is asked
+  P1.lock(visitor()&&hasHist()?CUR:null);
   $('nmrow').hidden=$('stk1').hidden=m!=='up';$('aname').required=m==='up';
   $('minpk').hidden=m!=='in'||!PK;$('efb').textContent=m==='up'?'Create account':'Send a code';
 }
@@ -1016,7 +1023,7 @@ async function syncIn(){
     if(r.state)adopt(r.state);
     meta({owner:me.email,rev,dirty:false});return;
   }
-  const guest=!m.owner,gl=guest?S.log.slice():[];
+  const guest=!m.owner&&!(hasHist()&&(me.cur||'USD')!==CUR),gl=guest?S.log.slice():[];
   if(guest&&S.buyins>0)gl.push(entry(S));
   if(!r.state){if(!guest)load({muted:S.muted,music:S.music});dirty=true;saveLocal();geom();draw();ui();push();return}
   load(r.state);
@@ -1041,11 +1048,25 @@ function step(n){
   const box=$('authv').querySelector(`[data-step="${n}"]`),f=(n==='stake'?box.querySelector('.seg button'):[...box.querySelectorAll('input')].find(i=>i.offsetParent))||box.querySelector('.btn');f&&f.focus();
 }
 function closeAuth(){if(gated||needName||needStake)return;$('authv').hidden=true;$('acct').focus()}
-/* sign-in gate: shown whenever accounts are available and nobody is signed in; the board plays demo balls behind it */
-function setGate(on){
+/* sign-in gate: shown when accounts are available, nobody is signed in and this device has no guest balls left; the board plays demo balls behind it */
+function setGate(on,stay){
   gated=on;$('authv').classList.toggle('gate',on);document.querySelector('.app').inert=on;
-  if(on){musStop();step('email');pendResume();kick()}
+  if(on){musStop();if(stay)setMode(amode);else{step('email');pendResume()}kick()}
 }
+/* guest balls: a visitor (a device that never signed in) plays GUEST_BALLS balls before the sign-up card. The count stays on the device.
+   No text says "free": the game never asks for money, and "free" makes a player expect a paid part later */
+const GUEST_BALLS=10;
+let guestN=0,guestT=0;
+try{guestN=+localStorage.getItem('plinko-guest')||0}catch(e){}
+const visitor=()=>!me&&!knownHere()&&!getMeta().owner;
+const guestPlay=()=>canGate&&visitor();
+const guestLeft=()=>Math.max(0,GUEST_BALLS-guestN);
+/* the card comes when the last guest ball is down, the auto run is over and the player closed the other cards */
+function guestCheck(){
+  if(gated||!guestPlay()||guestLeft()||AUTO.on||balls.length||!$('veil').hidden||!$('sq').hidden)return;
+  holdStop();setGate(true,!$('authv').hidden);
+}
+function guestSoon(){clearTimeout(guestT);guestT=setTimeout(guestCheck,1200)}
 function loadSWA(){
   if(window.SimpleWebAuthnBrowser)return Promise.resolve();
   return swa||(swa=new Promise((ok,no)=>{const s=document.createElement('script');s.src='https://unpkg.com/@simplewebauthn/browser@14.0.0/dist/bundle/index.umd.min.js';s.onload=ok;s.onerror=()=>{swa=null;no()};document.head.appendChild(s)}));
@@ -1093,7 +1114,7 @@ $('nf').onsubmit=async e=>{
 $('aname2').onclick=()=>{$('nmh').textContent='Change your name';$('nname').value=me&&me.name||'';$('nmem').textContent=me.email;$('nmout').hidden=true;step('name')};
 $('nmout').onclick=()=>$('aout').click();
 function busy(btn,on,label){if(on){btn.dataset.l=btn.textContent;btn.textContent=label;btn.disabled=true}else{btn.textContent=btn.dataset.l||btn.textContent;btn.disabled=false}}
-$('acct').onclick=()=>me?step('acct'):step('email');
+$('acct').onclick=()=>{if(me)step('acct');else{step('email');pendResume()}};
 for(const b of document.querySelectorAll('#amodes button'))b.onclick=()=>setMode(b.dataset.m);
 for(const b of document.querySelectorAll('#authv [data-close]'))b.onclick=closeAuth;
 $('authv').onclick=e=>{if(e.target.id==='authv')closeAuth()};
@@ -1165,11 +1186,15 @@ async function initAccount(){
   const guest=()=>{applyStake();saveLocal();ui()};   // no accounts here: play on this device with the default buy-in
   if(!/^https?:$/.test(location.protocol))return guest();
   const r=await api('/api/auth?op=me');
-  if(!r.ok||!('user' in r)||!r.ready||!r.ready.db){if(gated)setGate(false),$('authv').hidden=true;return guest()}
+  if(!r.ok||!('user' in r)||!r.ready||!r.ready.db){canGate=false;if(gated)setGate(false),$('authv').hidden=true;return guest()}
   $('acct').hidden=false;canGate=!!r.ready.email;
   try{localStorage.setItem('plinko-gate',canGate?'1':'0')}catch(e){}
   if(r.user){me=r.user;acctUI();if(gated){setGate(false);$('authv').hidden=true;balls=balls.filter(b=>!b.demo)}await syncIn();CUR=me.cur||(hasHist()?'USD':guessCur());settle();onboard()}
-  else if(canGate&&!gated)setGate(true);
+  else if(canGate){
+    if(visitor()&&guestLeft()){guest();pendResume()}
+    else if(!gated)setGate(true);
+  }
+  else ui();
 }
 
 /* cards: lock the page behind an open card, and keep the card in the visible area when the on-screen keyboard is open */
@@ -1225,9 +1250,10 @@ function start(data){
   window.claude?.hot?.snapshot?.(()=>S);
   const ro=new ResizeObserver(()=>layout());ro.observe(fig);
   const bar=document.querySelector('.foot');new ResizeObserver(()=>document.documentElement.style.setProperty('--barh',bar.offsetHeight+'px')).observe(bar);   // the phone scroll area ends above the fixed bar
+  try{canGate=/^https?:$/.test(location.protocol)&&localStorage.getItem('plinko-gate')==='1'}catch(e){}
   layout();ui();
   if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>draw());
-  try{if(/^https?:$/.test(location.protocol)&&localStorage.getItem('plinko-gate')==='1'&&!localStorage.getItem('plinko-sync'))setGate(true)}catch(e){}
+  try{if(canGate&&!localStorage.getItem('plinko-sync')&&!(visitor()&&guestLeft()))setGate(true)}catch(e){}
   initAccount();
   try{if(localStorage.getItem('plinko-sync')&&!gated)audio()}catch(e){}   // signed in: a browser that lets sound start with no touch plays the music at once
   picT=setTimeout(startPic,800);addEventListener('resize',()=>{clearTimeout(picT);picT=setTimeout(startPic,800)});
